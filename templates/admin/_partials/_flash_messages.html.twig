@@ -1,0 +1,19 @@
+{% for type, messages in app.flashes %} {# Abre bucle 1 #}
+{# Para cada tipo, itera sobre los mensajes específicos de ese tipo #}
+    {% for message in messages %} {# Abre bucle 2 #}
+        {# Usa clases CSS apropiadas para el tipo de mensaje (ej: Bootstrap alerts) #}
+<div class="alert alert-{{ type }} alert-dismissible fade show" role="alert">
+    {{ message|raw }} {# Usa |raw si el mensaje puede contener HTML seguro #}
+    <button type="button" class="btn custom-btn-xs btn-primary" data-bs-dismiss="alert" aria-label="Close">X</button>
+</div>
+{% endfor %}
+{% endfor %}
+
+</div> {# HTML suelto #}
+
+{% for message in app.flashes('warning') %}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        {{ message|raw }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+{% endfor %}

@@ -1,0 +1,30 @@
+{% extends 'admin/layout.html.twig' %} {# Ajusta según tu layout base #}
+
+{% block title %}Nova Despesa{% endblock %}
+
+{% block main %}
+
+    <h1 class="mb-4">{{ 'expense.create_title' | trans }}</h1>
+
+    {{ form_start(form) }}
+
+        {{ form_row(form.amount) }}
+        {{ form_row(form.description) }}
+        {{ form_row(form.date) }}
+        {{ form_row(form.type) }}
+        {{ form_row(form.paidFromAccountId) }}
+
+        {{ form_row(form.save) }}
+
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block sidebar %}
+    <div class="section actions">
+        <a href="{{ path('admin_expense_list') }}" class="btn btn-lg btn-block btn-success">
+            <i class="fa fa-list" aria-hidden="true"></i> {{ 'expense.list_action'|trans }}
+        </a>
+    </div>
+
+    {{ parent() }}
+{% endblock %}

@@ -5,7 +5,7 @@
    showing how powerful, yet easy to use, is Twig's inheritance mechanism.
    See https://symfony.com/doc/current/templates.html#template-inheritance-and-layouts
 #}
-{% extends 'base.html.twig' %}
+{% extends 'base-forms.html.twig' %}
 
 {% block importmap %}
     {# Load both the app.js and admin.js entrypoints #}

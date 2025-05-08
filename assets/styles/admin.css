@@ -32,3 +32,9 @@ body#admin_post_show .post-tags .label-default i {
   color: var(--blue);
   box-shadow: none;
 }
+.custom-btn-xs {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  border-radius: 0.2rem;
+}

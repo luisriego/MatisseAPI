@@ -30,10 +30,11 @@ RUN composer self-update
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh' | bash
 RUN apt install symfony-cli
 
-RUN apt install acl
-RUN setfacl -R -m u:www-data:rwx /var/www/html/var/log
-RUN setfacl -dR -m u:www-data:rwx /var/www/html/var/log
+#RUN apt install acl
+#RUN setfacl -R -m u:www-data:rwx /var/www/html/var/log
+#RUN setfacl -dR -m u:www-data:rwx /var/www/html/var/log
 
+RUN apt install -y sqlite3
 
 RUN mkdir -p /var/www/html
 

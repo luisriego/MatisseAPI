@@ -29,14 +29,13 @@ use Symfony\Component\Validator\Constraints as Assert;
  * @author Javier Eguiluz <javier.eguiluz@gmail.com>
  */
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: 'symfony_demo_user')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     // We can use constants for roles to find usages all over the application rather
     // than doing a full-text search on the "ROLE_" string.
     // It also prevents from making typo errors.
-    final public const ROLE_USER = 'ROLE_USER';
-    final public const ROLE_ADMIN = 'ROLE_ADMIN';
+    public const ROLE_USER = 'ROLE_USER';
+    public const ROLE_ADMIN = 'ROLE_ADMIN';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -59,6 +58,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::STRING)]
     private ?string $password = null;
 
+     #[ORM\ManyToOne(targetEntity: Resident::class, inversedBy: 'users')]
+     #[ORM\JoinColumn(nullable: false)]
+     private ?Resident $resident = null;
+
     /**
      * @var string[]
      */
@@ -68,6 +71,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function resident(): ?Resident
+    {
+        return $this->resident;
     }
 
     public function setFullName(string $fullName): void

@@ -1,10 +1,5 @@
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
-
-# Put parameters here that don't need to change on each machine where the app is deployed
-# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-    app.locale: 'en'
+    app.locale: 'pt_BR'
     app.notifications.email_sender: anonymous@example.com
 
 services:
@@ -13,9 +8,6 @@ services:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
         bind:
-            # this allows to define the scalar arguments once and apply them to any services
-            # defined/created in this file; if some argument is used rarely, instead of defining
-            # it here you can use the #[Autowire] attribute to inject it manually in the service constructor
             array $enabledLocales: '%kernel.enabled_locales%'
             string $defaultLocale: '%app.locale%'
 
@@ -28,5 +20,12 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    App\Bus\Expense\CreateExpenseCommandHandler:
+        tags: [ 'messenger.message_handler' ]
+    App\Event\Expense\ExpenseWasCreatedHandler:
+        tags: [ 'messenger.message_handler' ]
+
+    App\Bus\Income\CreateIncomeCommandHandler:
+        tags: [ 'messenger.message_handler' ]
+    App\Event\Income\IncomeWasCreatedHandler:
+        tags: [ 'messenger.message_handler' ]

@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    {% block page_title %}{% endblock %} - {{ parent() }}
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {% block form_stylesheets %}{% endblock %}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    {% block form_javascripts %}{% endblock %}
+{% endblock %}
+
+{% block main %}
+    {{ include('default/_flash_messages.html.twig') }} {# Asegúrate de que los mensajes flash se muestren #}
+
+    {% block form_content %}{% endblock form_content %}
+{% endblock %}
+
+{% block sidebar %}
+    {% block form_sidebar %}{% endblock form_sidebar %}
+{% endblock %}

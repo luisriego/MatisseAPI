@@ -1,8 +1,3 @@
-{#
-   This is the base template used as the application layout which contains the
-   common elements and decorates all the other templates.
-   See https://symfony.com/doc/current/templates.html#template-inheritance-and-layouts
-#}
 <!DOCTYPE html>
 <html lang="{{ app.locale }}">
     <head>
@@ -12,10 +7,6 @@
         <title>{% block title %}Symfony Demo application{% endblock %}</title>
         <link rel="alternate" type="application/rss+xml" title="{{ 'rss.title'|trans }}" href="{{ path('blog_rss') }}">
 
-        {#
-            Those two blocks defines frontend entrypoint for CSS and JavaScript assets
-            See https://symfony.com/doc/current/frontend.html
-        #}
         {% block stylesheets %}{% endblock %}
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
@@ -31,7 +22,7 @@
                 <nav class="navbar navbar-expand-lg fixed-top navbar-dark bg-primary">
                     <div class="container">
                         <a class="navbar-brand" href="{{ path('homepage') }}">
-                            Symfony Demo
+                            Condomínio de Edíficio Matisse
                         </a>
                         <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#appNavbar" aria-controls="appNavbar" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
@@ -52,6 +43,11 @@
                                             </a>
                                         </li>
                                     {% endif %}
+{#    #}
+{#                                    <li class="nav-item dropdown">#}
+{#                                        {% from 'default/_language_selector.html.twig' import render_language_selector %}#}
+{#                                        {{ render_language_selector() }}#}
+{#                                    </li>#}
                                 {% endblock %}
 
                                 <li class="nav-item{{ _route == 'blog_search' ? ' active' : '' }}">
@@ -76,11 +72,6 @@
                                         </div>
                                     </li>
                                 {% endif %}
-
-                                <li class="nav-item dropdown">
-                                    {% from 'default/_language_selector.html.twig' import render_language_selector %}
-                                    {{ render_language_selector() }}
-                                </li>
                             </ul>
                         </div>
                     </div>
@@ -99,11 +90,11 @@
 
                     <div id="sidebar" class="col-sm-3">
                         {% block sidebar %}
-                            {{ render_esi(controller('Symfony\\Bundle\\FrameworkBundle\\Controller\\TemplateController::templateAction', {
-                                'template': 'blog/about.html.twig',
-                                'sharedAge': 600,
-                                '_locale': app.locale
-                            })) }}
+{#                            {{ render_esi(controller('Symfony\\Bundle\\FrameworkBundle\\Controller\\TemplateController::templateAction', {#}
+{#                                'template': 'blog/about.html.twig',#}
+{#                                'sharedAge': 600,#}
+{#                                '_locale': app.locale#}
+{#                            })) }}#}
                         {% endblock %}
                     </div>
                 </div>
@@ -115,15 +106,15 @@
                 <div class="container">
                     <div class="row">
                         <div id="footer-copyright" class="col-md-6">
-                            <p>&copy; {{ 'now'|date('Y') }} - The Symfony Project</p>
+                            <p>&copy; {{ 'now'|date('Y') }} - Luis Riego</p>
                             <p>{{ 'mit_license'|trans }}</p>
                         </div>
                         <div id="footer-resources" class="col-md-6">
                             <p>
-                                <a rel="noopener noreferrer" target="_blank" href="https://twitter.com/symfony" title="Symfony on X (formerly Twitter)">
+                                <a rel="noopener noreferrer" target="_blank" href="" title="Symfony on X (formerly Twitter)">
                                     <twig:ux:icon name="tabler:brand-x" font-size="28px" /> <span class="sr-only">X/Twitter</span>
                                 </a>
-                                <a target="_blank" href="https://symfony.com/blog/" title="Symfony Blog">
+                                <a target="_blank" href="" title="Symfony Blog">
                                     <twig:ux:icon name="tabler:rss" font-size="28px" /> <span class="sr-only">RSS feed</span>
                                 </a>
                             </p>
