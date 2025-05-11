@@ -1,0 +1,55 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Gerar Boletos Condominiais{% endblock %}
+
+{% block main %}
+    <div class="container mt-4">
+        <h1>Gerar Boletos Condominiais</h1>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Selecionar Mês para Geração</h5>
+                {{ form_start(form) }}
+                <div class="mb-3">
+                    {{ form_label(form.targetMonth) }}
+                    {{ form_widget(form.targetMonth) }}
+                    <small class="form-text text-muted">{{ form_help(form.targetMonth) }}</small>
+                    {{ form_errors(form.targetMonth) }}
+                </div>
+
+                {% if form.vars.needs_confirmation and form.confirm_regeneration is defined %}
+                    <div class="alert alert-warning">
+                        <strong>Atenção!</strong> Já existem {{ form.vars.existing_slips_count }} boleto(s) para o mês de {{ form.vars.month_to_confirm|date('F Y') }}.
+                    </div>
+                    <div class="mb-3 form-check">
+                        {{ form_widget(form.confirm_regeneration) }}
+                        {{ form_label(form.confirm_regeneration) }} {# El label ya está formateado por el FormType #}
+                        {{ form_errors(form.confirm_regeneration) }}
+                    </div>
+                {% endif %}
+
+                {{ form_widget(form.submit) }}
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block sidebar %}
+    <div class="section actions">
+        <a href="{{ path('admin_expense_list') }}" class="btn btn-lg btn-block btn-success">
+            <i class="fa fa-list" aria-hidden="true"></i> {{ 'slip.list_action'|trans }}
+        </a>
+    </div>
+
+    {{ parent() }}
+{% endblock %}

@@ -15,12 +15,17 @@
 {% block header_navigation_links %}
     <li class="nav-item{{ _route in ['admin_index', 'admin_post_index'] ? ' active' : '' }}">
         <a class="nav-link" href="{{ path('admin_expense_list') }}">
-            <twig:ux:icon name="tabler:list"/> {{ 'menu.expense_list'|trans }}
+            <twig:ux:icon name="tabler:calendar-dollar"/> {{ 'menu.expense'|trans }}
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link" href="{{ path('admin_income_list') }}">
-            <twig:ux:icon name="tabler:home"/> {{ 'menu.income_list'|trans }}
+            <twig:ux:icon name="tabler:license"/> {{ 'menu.income'|trans }}
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('admin_slip_generation') }}">
+            <twig:ux:icon name="tabler:brand-cashapp"/> {{ 'menu.slip'|trans }}
         </a>
     </li>
 {% endblock %}

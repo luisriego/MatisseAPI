@@ -64,4 +64,41 @@ class ExpenseRepository extends ServiceEntityRepository
 
         return $grouped;
     }
+
+    /**
+     * @param \DateTimeInterface $startDate Start date of the range.
+     * @param \DateTimeInterface $endDate Finish date of the range.
+     * @return Expense[]
+     */
+    public function findExpensesBetweenDates(
+        \DateTimeInterface $startDate,
+        \DateTimeInterface $endDate
+    ): array
+    {
+        return $this->createQueryBuilder('e')
+            ->where('e.dueDate BETWEEN :startDate AND :endDate')
+            ->setParameter('startDate', $startDate)
+            ->setParameter('endDate', $endDate)
+            ->orderBy('e.dueDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findRecurringExpenses(int $month): array
+    {
+        $allRecurringExpenses = $this->createQueryBuilder('e')
+            ->where('e.isRecurring = :isRecurring')
+            ->setParameter('isRecurring', true)
+            ->getQuery()
+            ->getResult();
+
+        $expensesForGivenMonth = [];
+        foreach ($allRecurringExpenses as $expense) {
+            if (in_array($month, $expense->getPayOnMonths(), true)) {
+                $expensesForGivenMonth[] = $expense;
+            }
+        }
+
+        return $expensesForGivenMonth;
+    }
 }

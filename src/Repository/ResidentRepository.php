@@ -32,4 +32,14 @@ class ResidentRepository extends ServiceEntityRepository
 
         return $resident;
     }
+
+    public function findAllPayers(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->where('r.unit <> :condoUnit')
+            ->setParameter('condoUnit', Resident::CONDO)
+            ->orderBy('r.unit', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

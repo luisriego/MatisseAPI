@@ -25,28 +25,21 @@ class SlipRepository extends ServiceEntityRepository
         parent::__construct($registry, Slip::class);
     }
 
-    //    /**
-    //     * @return Slip[] Returns an array of Slip objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('s.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * @throws \DateMalformedStringException
+     */
+    public function countForMonth(int $year, int $month): int
+    {
+        $startDate = new \DateTimeImmutable(sprintf('%04d-%02d-01 00:00:00', $year, $month));
+        $endDate = $startDate->modify('last day of this month')->setTime(23, 59, 59);
 
-    //    public function findOneBySomeField($value): ?Slip
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        return (int) $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->where('s.dueDate >= :startDate')
+            ->andWhere('s.dueDate <= :endDate')
+            ->setParameter('startDate', $startDate)
+            ->setParameter('endDate', $endDate)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

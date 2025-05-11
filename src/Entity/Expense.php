@@ -26,7 +26,13 @@ class Expense
 
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private \DateTimeImmutable $paidAt;
-    
+
+    #[ORM\Column(nullable: true)]
+    private bool $isRecurring = true;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private array $payOnMonths;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -39,12 +45,16 @@ class Expense
     private function __construct(
         string $id,
         int $amount,
+        bool $isRecurring,
+        array $payOnMonths,
         ExpenseType $type,
         Account $account,
         \DateTime $dueDate)
     {
         $this->id = $id;
         $this->amount = $amount;
+        $this->isRecurring = $isRecurring;
+        $this->payOnMonths = $payOnMonths;
         $this->dueDate = $dueDate;
         $this->type = $type;
         $this->account = $account;
@@ -54,11 +64,13 @@ class Expense
     public static function create(
         string $id,
         int $amount,
+        bool $isRecurring,
+        array $payOnMonths,
         ExpenseType $type,
         Account $account,
         \DateTime $dueDate): self
     {
-        return new self($id, $amount, $type, $account, $dueDate);
+        return new self($id, $amount, $isRecurring, $payOnMonths, $type, $account, $dueDate);
     }
 
     public function id(): string
@@ -84,6 +96,16 @@ class Expense
     public function payedAt(\DateTimeImmutable $paidAt): void
     {
         $this->paidAt = $paidAt;
+    }
+
+    public function isRecurring(): bool
+    {
+        return $this->isRecurring;
+    }
+
+    public function setRecurring(bool $isRecurring): void
+    {
+        $this->isRecurring = $isRecurring;
     }
 
     public function createdAt(): ?\DateTimeImmutable

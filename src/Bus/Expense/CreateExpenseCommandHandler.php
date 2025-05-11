@@ -35,6 +35,8 @@ readonly class CreateExpenseCommandHandler
         $expense = Expense::create(
             Uuid::v4()->toRfc4122(),
             $command->amount,
+            $command->isRecurring,
+            $command->payOnMonths,
             $expenseType,
             $account,
             new \DateTime($command->date)
