@@ -1,65 +1,77 @@
+{# templates/admin/income/list.html.twig #}
 {% extends 'admin/layout.html.twig' %}
 
-    {% block title %}Income List{% endblock %}
+{% block title %}{{ 'income.list.title'|trans }}{% endblock %}
 
-    {% block main %}
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>{{ 'income.list' | trans }}</h1>
-            <a href="{{ path('admin_income_create') }}" class="btn btn-lg btn-success">
-                <i class="fa fa-plus" aria-hidden="true"></i> {{ 'income.create_action'|trans }}
-            </a>
+{# Configure admin layout header elements #}
+{% block page_title %}{{ 'income.list.title'|trans }}{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active" aria-current="page">{{ 'income.list.title'|trans }}</li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('admin_income_create') }}" class="btn btn-primary">
+        <twig:ux:icon name="tabler:plus" class="me-1"/> {{ 'income.create_action'|trans }}
+    </a>
+{% endblock %}
+
+{# --- Layout Customizations for this page --- #}
+{% block main_column_class %}col-12{% endblock %} {# Make main content full width #}
+{% block sidebar %}{% endblock %} {# Empty the sidebar block, so it won't be rendered #}
+{# --- End Layout Customizations --- #}
+
+{% block admin_page_content %}
+    {# Flash messages are already included in admin/layout.html.twig #}
+
+    {# If you have filters for income, add them here similar to expense list #}
+    {# <div class="card card-body mb-4"> ... filter form ... </div> #}
+
+    {% if incomes is defined and incomes %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title mb-0">{{ 'income.list.all'|trans }}</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                    <tr>
+                        <th>{{ 'income.field.description'|trans }}</th>
+                        <th>{{ 'income.field.amount'|trans }}</th>
+                        <th>{{ 'income.field.date'|trans }}</th>
+                        <th>{{ 'income.field.residence_unit'|trans }}</th> {# Changed from Account to Residence Unit as per your template #}
+                        <th>{{ 'actions'|trans }}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for income in incomes %}
+                        <tr>
+                            <td>{{ income.type.name|default('') }} - {{ income.description }}</td>
+                            <td>{{ (income.amount / 100) | number_format(2, ',', '.') }} R$</td>
+                            <td>{{ income.dueDate | date('d/m/Y') }}</td>
+                            <td>{{ income.residence.unit|default('N/A') }}</td>
+                            <td>
+                                {# Assuming an edit path for income, adjust if different #}
+                                <a href="{{ path('admin_income_edit', { id: income.id }) }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <twig:ux:icon name="tabler:edit" class="me-1"/>{{ 'action.edit'|trans }}
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center">{{ 'income.list.no_incomes_found'|trans }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-
-        {# Flash messages for success or error notifications #}
-        {% include 'admin/_partials/_flash_messages.html.twig' %}
-
-{#        <form method="GET" class="mb-4">#}
-{#            <div class="row align-items-end">#}
-{#                <div class="col-md-5">#}
-{#                    <label for="month" class="form-label">Filter by month:</label>#}
-{#                    <input type="month" id="month" name="month" class="form-control"#}
-{#                           value="{{ selectedYear and selectedMonth ? selectedYear ~ '-' ~ selectedMonth : '' }}">#}
-{#                </div>#}
-{#                <div class="col-md-6 d-flex justify-content-between">#}
-{#                    <button type="submit" class="btn btn-sm btn-primary">Apply Filter</button>#}
-{#                    <a href="{{ path('admin_income_list') }}" class="btn btn-sm btn-secondary">Clear Filter</a>#}
-{#                </div>#}
-{#            </div>#}
-{#        </form>#}
-
-        <table class="table table-striped">
-            <thead>
-            <tr>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Account</th>
-                <th>Actions</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for income in incomes %}
-                <tr>
-                    <td>{{ income.type.name }} - {{ income.description }}</td>
-                    <td>{{ (income.amount / 100) | number_format(2, ',', '.') }} R$</td>
-                    <td>{{ income.dueDate | date('d/m/Y') }}</td>
-                    <td>{{ income.residence.unit }}</td>
-                    <td>
-                        <a href="{{ path('admin_expense_edit', { id: income.id }) }}"
-                           class="btn custom-btn-xs btn-primary">Edit</a>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    {% endblock %}
-
-{#    {% block sidebar %}#}
-{#        <div class="section actions">#}
-{#            <a href="{{ path('admin_post_new') }}" class="btn btn-lg btn-block btn-success">#}
-{#                <i class="fa fa-plus" aria-hidden="true"></i> {{ 'action.create_post'|trans }}#}
-{#            </a>#}
-{#        </div>#}
-
-{#        {{ parent() }}#}
-{#    {% endblock %}#}
+    {% else %}
+        <div class="alert alert-info">
+            <p>{{ 'income.list.data_from_bank_api'|trans }}</p>
+            {# Or a more generic "No incomes found." message if the API message is conditional #}
+            {# {{ 'income.list.no_incomes_found'|trans }} #}
+        </div>
+    {% endif %}
+{% endblock %}

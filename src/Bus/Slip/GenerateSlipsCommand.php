@@ -7,8 +7,7 @@ namespace App\Bus\Slip;
 readonly class GenerateSlipsCommand
 {
     public function __construct(
-        public string $targetMonthDateString)
-    {
-
+        public string $targetMonthDateString
+    ) {
     }
 }

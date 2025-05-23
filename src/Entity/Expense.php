@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\ExpenseRepository;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ExpenseRepository::class)]
@@ -19,19 +20,13 @@ class Expense
     private int $amount;
 
     #[ORM\Column(length: 255, nullable: true,)]
-    private ?string $description = "empty";
+    private ?string $description = "";
 
     #[ORM\Column(type: 'datetime')]
     private \DateTime $dueDate;
 
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private \DateTimeImmutable $paidAt;
-
-    #[ORM\Column(nullable: true)]
-    private bool $isRecurring = true;
-
-    #[ORM\Column(type: 'json', nullable: true)]
-    private array $payOnMonths;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
@@ -42,19 +37,19 @@ class Expense
     #[ORM\ManyToOne(inversedBy: 'expenses')]
     private ?ExpenseType $type = null;
 
-    private function __construct(
+    #[ORM\ManyToOne(targetEntity: RecurringExpense::class, inversedBy: 'expenses')]
+    #[ORM\JoinColumn(name: "recurring_id", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
+    private ?RecurringExpense $recurringExpense = null;
+
+    public function __construct(
         string $id,
         int $amount,
-        bool $isRecurring,
-        array $payOnMonths,
         ExpenseType $type,
-        Account $account,
+        ?Account $account,
         \DateTime $dueDate)
     {
         $this->id = $id;
         $this->amount = $amount;
-        $this->isRecurring = $isRecurring;
-        $this->payOnMonths = $payOnMonths;
         $this->dueDate = $dueDate;
         $this->type = $type;
         $this->account = $account;
@@ -64,13 +59,11 @@ class Expense
     public static function create(
         string $id,
         int $amount,
-        bool $isRecurring,
-        array $payOnMonths,
         ExpenseType $type,
-        Account $account,
+        ?Account $account,
         \DateTime $dueDate): self
     {
-        return new self($id, $amount, $isRecurring, $payOnMonths, $type, $account, $dueDate);
+        return new self($id, $amount, $type, $account, $dueDate);
     }
 
     public function id(): string
@@ -98,16 +91,6 @@ class Expense
         $this->paidAt = $paidAt;
     }
 
-    public function isRecurring(): bool
-    {
-        return $this->isRecurring;
-    }
-
-    public function setRecurring(bool $isRecurring): void
-    {
-        $this->isRecurring = $isRecurring;
-    }
-
     public function createdAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -128,8 +111,34 @@ class Expense
         return $this->description;
     }
 
-    public function addDescription(?string $description): void
+    public function addDescription(?string $description): self
     {
         $this->description = $description;
+        return $this;
+    }
+
+    public function recurringExpense(): ?RecurringExpense
+    {
+        return $this->recurringExpense;
+    }
+
+    public function setRecurringExpense(?RecurringExpense $recurringExpense): self
+    {
+        $this->recurringExpense = $recurringExpense;
+        return $this;
+    }
+
+    public function setAccount(?string $account): self
+    {
+        $this->account = $account;
+        return $this;
+    }
+
+    /**
+     * @param \DateTime $dueDate
+     */
+    public function setDueDate(\DateTime $dueDate): void
+    {
+        $this->dueDate = $dueDate;
     }
 }

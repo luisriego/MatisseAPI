@@ -1,0 +1,138 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_pretitle %}Visão Geral da Administração{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+{% endblock %}
+
+{% block admin_page_content %}
+    <div class="row">
+        {# Despesas Recorrentes Totais #}
+        <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="card text-bg-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <twig:ux:icon name="tabler:repeat" class="fs-1"/>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="card-title mb-1">{{ totalRecurringExpenses }}</h3>
+                            <p class="card-text small">Despesas Recorrentes</p> {# Simplificado el texto #}
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ path('admin_recurring_expense_index') }}" class="card-footer small text-decoration-none text-white">
+                    Ver Lista <twig:ux:icon name="tabler:arrow-right" class="float-end"/>
+                </a>
+            </div>
+        </div>
+
+        {# Total de Receitas #}
+        <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="card text-bg-success"> {# Color diferente para Receitas #}
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <twig:ux:icon name="tabler:cash" class="fs-1"/> {# Icono para ingresos/dinero #}
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="card-title mb-1">{{ totalIncomes }}</h3>
+                            <p class="card-text small">Total Receitas mes corrente</p>
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ path('admin_income_list') }}" class="card-footer small text-decoration-none text-white">
+                    Ver Lista <twig:ux:icon name="tabler:arrow-right" class="float-end"/>
+                </a>
+            </div>
+        </div>
+
+        {# Total de Despesas (No Recorrentes) #}
+        <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="card text-bg-danger"> {# Color diferente para Despesas #}
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <twig:ux:icon name="tabler:receipt-2" class="fs-1"/> {# Icono para gastos/recibos #}
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="card-title mb-1">{{ totalExpenses }}</h3>
+                            <p class="card-text small">Total Despesas mes corrente</p>
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ path('admin_expense_list') }}" class="card-footer small text-decoration-none text-white">
+                    Ver Lista <twig:ux:icon name="tabler:arrow-right" class="float-end"/>
+                </a>
+            </div>
+        </div>
+
+        {# Tipos de Despesa #}
+        <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="card text-bg-info">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <twig:ux:icon name="tabler:tags" class="fs-1"/>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="card-title mb-1">{{ totalExpenseTypes }}</h3>
+                            <p class="card-text small">Tipos de Despesa</p>
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ path('admin_expense_type_index') }}" class="card-footer small text-decoration-none text-white">
+                    Ver Tipos <twig:ux:icon name="tabler:arrow-right" class="float-end"/>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <twig:ux:icon name="tabler:rocket" class="me-1"/> Ações Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ path('admin_recurring_expense_generate') }}" class="btn btn-primary mb-2 me-2">
+                        <twig:ux:icon name="tabler:plus"/> Nova Despesa Recorrente
+                    </a>
+                    {# Asegúrate que esta ruta exista o comenta el botón temporalmente #}
+                    <a href="" class="btn btn-secondary mb-2 me-2">
+                        <twig:ux:icon name="tabler:square-plus"/> Novo Tipo de Despesa
+                    </a>
+                    <a href="{{ path('admin_slip_generation') }}" class="btn btn-warning mb-2 me-2"> {# Color para destacar #}
+                        <twig:ux:icon name="tabler:brand-cashapp"/> Gerar Boletos
+                    </a>
+                    {# Puedes añadir botones para Nueva Receita y Nueva Despesa si lo deseas #}
+                    <a href="{{ path('admin_income_create') }}" class="btn btn-success mb-2 me-2">
+                        <twig:ux:icon name="tabler:coin"/> Nova Receita
+                    </a>
+                    <a href="{{ path('admin_expense_create') }}" class="btn btn-danger mb-2 me-2">
+                        <twig:ux:icon name="tabler:receipt"/> Nova Despesa
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <twig:ux:icon name="tabler:info-circle" class="me-1"/> Bem-vinda(o)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>Este é o painel de administração do Admicon Matisse.</p>
+                    <p>Utilize o menu lateral para navegar ou as ações rápidas.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -2,42 +2,40 @@
 
 namespace App\Service;
 
-use App\Entity\Resident;
 use App\Entity\Slip;
 use App\Repository\ExpenseRepository;
 use App\Repository\ResidentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use App\Service\MonthlyExpenseAggregatorService;
 
-
-class SlipGenerationService
+readonly class SlipGenerationService
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly LoggerInterface        $logger,
-        private readonly ExpenseRepository      $expenseRepository,
-        private readonly ResidentRepository     $residentRepository,
+        private EntityManagerInterface $entityManager,
+        private LoggerInterface $logger,
+        private ExpenseRepository $expenseRepository,
+        private ResidentRepository $residentRepository,
+        private SlipAmountCalculatorService $slipAmountCalculator,
+        private RecurringExpenseCheckerService $recurringExpenseChecker,
+        private DueDateCalculatorService $dueDateCalculator,
+        private MonthlyExpenseAggregatorService $monthlyExpenseAggregator
     ) {
     }
 
-    public function generateSlipsForMonth(\DateTimeInterface $targetMonthDate): array
+    public function generateSlipsForMonth(\DateTimeInterface $targetMonthDate, bool $forceGenerationDespiteMissingRecurrents = false): array
     {
         $year = (int)$targetMonthDate->format('Y');
         $month = (int)$targetMonthDate->format('m');
 
         $formatter = new \IntlDateFormatter(
-            'pt_BR',
-            \IntlDateFormatter::LONG,
-            \IntlDateFormatter::NONE,
-            $targetMonthDate->getTimezone()->getName(),
-            \IntlDateFormatter::GREGORIAN,
-            "MMMM 'de' yyyy"
+            'pt_BR', \IntlDateFormatter::LONG, \IntlDateFormatter::NONE,
+            $targetMonthDate->getTimezone()->getName(), \IntlDateFormatter::GREGORIAN, "MMMM 'de' yyyy"
         );
         $monthName = $formatter->format($targetMonthDate);
 
         $this->logger->info(sprintf('Iniciando generación de boletos para %s', $monthName));
-
         $startDate = $targetMonthDate->modify('first day of this month')->setTime(0, 0, 0);
         $endDate = $targetMonthDate->modify('last day of this month')->setTime(23, 59, 59);
 
@@ -46,232 +44,105 @@ class SlipGenerationService
         if (empty($monthlyExpenses)) {
             $message = sprintf('Não foram encontradas despesas para %s. Nenhum boleto será gerado.', $monthName);
             $this->logger->info($message);
+            return ['success' => true, 'message' => $message, 'slipsData' => [], 'slipsCount' => 0];
+        }
+
+        $expenseTotals = $this->monthlyExpenseAggregator->aggregateTotals($monthlyExpenses);
+        $totalExpensesEqualDistribution = $expenseTotals['equal'];
+        $totalExpensesFractionDistribution = $expenseTotals['fraction'];
+        // $totalExpensesIndividual = $expenseTotals['individual']; // Descomentar si se usa más adelante
+        // $grandTotalExpenses = $expenseTotals['grandTotal']; // Descomentar si se usa más adelante
+
+
+        $this->logger->info(sprintf('Soma total de despesas registradas em %s: %.2f', $monthName, $expenseTotals['grandTotal'] / 100));
+        $this->logger->info(sprintf('Soma de despesas distribuídas igualmente: %.2f', $totalExpensesEqualDistribution / 100));
+        $this->logger->info(sprintf('Soma de despesas por fração ideal: %.2f', $totalExpensesFractionDistribution / 100));
+        $this->logger->info(sprintf('Soma de despesas individuais/não distribuídas: %.2f', $expenseTotals['individual'] / 100));
+
+
+        $missingRecurringExpenseInstances = $this->recurringExpenseChecker->getMissingInstances($year, $month);
+
+        if (!empty($missingRecurringExpenseInstances)) {
+            $missingDescriptions = array_map(fn($re) => $re->description() ?: ('ID Recurrente: ' . $re->id()), $missingRecurringExpenseInstances);
+
+            // --- CAMBIO AQUÍ: Incluir la lista en el mensaje base ---
+            $baseMessage = sprintf(
+                'Faltam instâncias de Expense para os seguintes gastos recorrentes esperados em %s: %s. Geração de boletos interrompida.',
+                $monthName,
+                implode(', ', $missingDescriptions) // <-- AÑADIMOS LA LISTA AQUÍ
+            );
+            // --- FIN CAMBIO ---
+
+            // Loguear el error, incluyendo los detalles en el contexto (opcional, pero útil)
+            $this->logger->error($baseMessage, ['missing_recurrent_expenses' => $missingDescriptions]);
+
+            // Devolver un resultado de falla, incluyendo los detalles
             return [
-                'success' => true, // El proceso se considera "exitoso" en el sentido de que no hubo error técnico, pero no se generó nada.
-                'message' => $message,
+                'success' => false,
+                'message' => $baseMessage . ' Favor revisar os gastos faltantes antes de tentar novamente.', // El mensaje ya contiene la lista
                 'slipsData' => [],
-                'slipsCount' => 0
+                'slipsCount' => 0,
+                'reason' => 'missing_recurrent_expenses',
+                'details' => $missingDescriptions // Incluir los detalles en el retorno sigue siendo útil
             ];
-        }
-
-        $totalExpensesEqualDistribution = 0;
-        $totalExpensesFractionDistribution = 0;
-        $totalExpensesIndividual = 0;
-
-        foreach ($monthlyExpenses as $expense) {
-            $expenseType = $expense->type();
-            if (!$expenseType) {
-                $this->logger->warning(sprintf(
-                    'Despesa %s não tem um tipo registrado, portanto não tenho como saber onde computá-la',
-                    $expense->description()));
-                throw new \RuntimeException(sprintf(
-                    'Despesa %s não tem um tipo registrado, portanto não tenho como saber onde computá-la',
-                    $expense->description()));
-            }
-
-            switch ($expenseType->distributionMethod()) {
-                case 'EQUAL':
-                    $totalExpensesEqualDistribution += $expense->amount();
-                    break;
-                case 'FRACTION':
-                    $totalExpensesFractionDistribution += $expense->amount();
-                    break;
-                default:
-                    $totalExpensesIndividual += $expense->amount();
-            }
-
-            $this->logger->info(sprintf(
-                'Soma total de despesas registradas em %s: %.2f',
-                $monthName, $totalExpensesEqualDistribution + $totalExpensesFractionDistribution + $totalExpensesIndividual));
-            $this->logger->info(sprintf(
-                'Soma de despesas distribuídas igualmente: %.2f',
-                $totalExpensesEqualDistribution));
-            $this->logger->info(sprintf(
-                'Soma de despesas por fração ideal: %.2f',
-                $totalExpensesFractionDistribution));
-        }
-
-        $missingRecurringExpenses = $this->checkRecurringExpenses($monthlyExpenses, $month);
-        if (!empty($missingRecurringExpenses)) {
-            $this->logger->warning('Faltam os seguintes gastos recurrentes esperados: '. implode(', ', $missingRecurringExpenses));;
         }
 
         $residents = $this->residentRepository->findAllPayers();
+        if (empty($residents)) {
+            $message = sprintf('Não foram encontrados residentes pagadores. Nenhum boleto será gerado para %s.', $monthName);
+            $this->logger->warning($message);
+            return ['success' => true, 'message' => $message, 'slipsData' => [], 'slipsCount' => 0];
+        }
+        $numberOfPayingResidents = count($residents);
 
         $generatedSlipsData = [];
         $slipsPersistedCount = 0;
-        $slipsGenerated = 0;
+
         $this->entityManager->beginTransaction();
         try {
             foreach ($residents as $resident) {
-                $baseSlipAmountInCents = $this->calculateBaseSlipAmountForExpenses($resident, $monthlyExpenses);
-
-                $gasRestitutionInCents = 0; // consumo de gas deve ser uma entidade, estudar
-
-                $slipAmountInCents = $baseSlipAmountInCents + $gasRestitutionInCents;
-
-                $dueDate = $targetMonthDate->modify('first day of next month')->modify('+7 days');
-
-                $slip = Slip::create(
-                    Uuid::v4()->toRfc4122(),
-                    $slipAmountInCents,
-                    $dueDate,
+                $baseSlipAmountInCents = $this->slipAmountCalculator->calculateBaseAmount(
+                    $resident,
+                    $totalExpensesEqualDistribution,
+                    $totalExpensesFractionDistribution,
+                    $numberOfPayingResidents
                 );
 
-                $slip->setResidence($resident);
+                $gasRestitutionInCents = 0; // Placeholder
+                $slipAmountInCents = $baseSlipAmountInCents + $gasRestitutionInCents;
 
-                $this->entityManager->persist($slip);
-
-                if ($slip) {
-                    $generatedSlipsData[] = [
-                        'id' => $slip->id(),
-                        'residentId' => $slip->residence()->id(),
-                        'unit' => $slip->residence()->unit(),
-                        'amount' => $slip->amount(),
-                        'dueDate' => $slip->dueDate()->format('Y-m-d'),
-                        'month' => (int)$targetMonthDate->format('m'),
-                        'year' => (int)$targetMonthDate->format('Y'),
-
-                    ];
-                    $slipsPersistedCount++;
+                if ($slipAmountInCents <= 0) {
+                    $this->logger->info(sprintf('Valor do boleto para %s (ID: %s) é zero ou negativo (%.2f). Boleto não será gerado.', $resident->unit(), $resident->id(), $slipAmountInCents / 100));
+                    continue;
                 }
 
-                $slipsGenerated++;
-                $this->logger->info(sprintf('Boleto gerado para %s (ID: %s)', $resident->unit(), $slip->id()));
+                $dueDate = $this->dueDateCalculator->fifthBusinessDayOfMonth($targetMonthDate);
+                $slip = Slip::create(Uuid::v4()->toRfc4122(), $slipAmountInCents, $dueDate);
+                $slip->setResidence($resident);
+                $this->entityManager->persist($slip);
+
+                $generatedSlipsData[] = ['id' => $slip->id(), 'residentId' => $slip->residence()->id(), 'unit' => $slip->residence()->unit(), 'amount' => $slip->amount(), 'dueDate' => $slip->dueDate()->format('Y-m-d'), 'month' => $month, 'year' => $year];
+                $slipsPersistedCount++;
+                $this->logger->info(sprintf('Boleto gerado para %s (ID: %s), Valor: %.2f, Vencimento: %s', $resident->unit(), $slip->id(), $slip->amount() / 100, $slip->dueDate()->format('d/m/Y')));
             }
 
-            if ($slipsGenerated === 5) {
+            if ($slipsPersistedCount > 0) {
                 $this->entityManager->flush();
                 $this->entityManager->commit();
-                $message = "{$slipsPersistedCount} 5 boletos gerados com sucesso para {$targetMonthDate->format('F Y')}.";
-                $this->logger->info($message);;
-                return [
-                    'success' => true,
-                    'message' => $message,
-                    'slipsData' => $generatedSlipsData,
-                    'slipsCount' => $slipsPersistedCount
-                ];
+                $message = "{$slipsPersistedCount} boletos gerados com sucesso para {$monthName}.";
+                $this->logger->info($message);
+                return ['success' => true, 'message' => $message, 'slipsData' => $generatedSlipsData, 'slipsCount' => $slipsPersistedCount];
             }
 
             $this->entityManager->rollback();
-            $this->logger->info('Houve problemas ao gerar os boletos, veja mais informação a seguir: ');
-            return [
-                'success' => true,
-                'message' => 'Houve problemas ao gerar os boletos, veja mais informação a seguir: ',
-                'slipsData' => [],
-                'slipsCount' => 0
-            ];
+            $message = "Nenhum boleto foi gerado para {$monthName} pois os valores calculados foram zero ou não havia despesas/residentes elegíveis.";
+            $this->logger->info($message);
+            return ['success' => true, 'message' => $message, 'slipsData' => [], 'slipsCount' => 0];
+
         } catch (\Exception $e) {
             $this->entityManager->rollback();
-            $this->logger->info('Houve problemas ao gerar os boletos, veja mais informação a seguir: ');
-            return [
-                'success' => false,
-                'message' => 'Houve problemas ao gerar os boletos, veja mais informação a seguir: ',
-                'slipsData' => [],
-                'slipsCount' => 0
-            ];
+            $this->logger->error(sprintf('Erro durante a geração ou persistência dos boletos para %s: %s', $monthName, $e->getMessage()), ['exception' => $e]);
+            return ['success' => false, 'message' => sprintf('Erro ao gerar boletos para %s: %s', $monthName, $e->getMessage()), 'slipsData' => [], 'slipsCount' => 0];
         }
-    }
-
-    private function checkRecurringExpenses(array $monthlyExpenses, $month): array
-    {
-        $missing = [];
-        $expectedRecurringDescriptions = $this->expenseRepository->findRecurringExpenses($month);
-        $foundExpenseDescriptions = [];
-        foreach ($monthlyExpenses as $expense) {
-            $foundExpenseDescriptions[] = $expense->description();
-        }
-
-        foreach ($expectedRecurringDescriptions as $expected) {
-            if (!in_array($expected, $foundExpenseDescriptions, true)) {
-                $missing[] = $expected;
-            }
-        }
-        return $missing;
-    }
-
-    private function calculateBaseSlipAmountForExpenses(
-        Resident $resident,
-        array $monthlyExpenses
-    ): int
-    {
-        $residentSlipAmountInCents = 0;
-        $sumOfEquallyDividedExpensesInCents = 0;
-        $sumOfFractionBasedExpensesInCents = 0;
-
-        foreach ($monthlyExpenses as $expense) {
-            $expenseType = $expense->type();
-            if (!$expenseType) {
-                $this->logger->warning(sprintf('Despesa %s não tem um tipo registrado, portanto não tenho como saber onde computá-la.', $expense->id()));
-                continue;
-            }
-
-            $distributionMethod = $expenseType->distributionMethod();
-
-            switch (strtoupper((string)$distributionMethod)) {
-                case 'EQUAL':
-                    $sumOfEquallyDividedExpensesInCents += $expense->amount();
-                    break;
-                case 'FRACTION':
-                    $sumOfFractionBasedExpensesInCents += $expense->amount();
-                    break;
-                default:
-                    $this->logger->info(sprintf(
-                        '  - Despesa "%s" (Tipo: "%s", Importe: %.2f) tem um método de distribuição "%s" não aplicável para cálculo base. Será omitida.',
-                        $expense->description(),
-                        $expenseType->name(),
-                        $expense->amount() / 100,
-                        $distributionMethod
-                    ));
-                    break;
-            }
-        }
-
-        $amountPerResident = (int)round($sumOfEquallyDividedExpensesInCents / 5);
-        $residentSlipAmountInCents += $amountPerResident;
-        $this->logger->info(sprintf(
-            '    + Despesas igualmente divididas para %s: %.2f',
-            $resident->unit(), $amountPerResident / 100));
-
-        $idealFraction = $resident->idealFraction();
-        if ($idealFraction >= 0) {
-            if ($sumOfFractionBasedExpensesInCents > 0) {
-                $shareOfFractionExpenses = (int)round($sumOfFractionBasedExpensesInCents * $idealFraction);
-                $residentSlipAmountInCents += $shareOfFractionExpenses;
-                $this->logger->info(sprintf(
-                    '    + Despesas por fração ideal para %s (%.2f%% de %.2f): %.2f',
-                    $resident->unit(), $idealFraction * 100, $sumOfFractionBasedExpensesInCents / 100, $shareOfFractionExpenses / 100));
-            }
-        } elseif ($sumOfFractionBasedExpensesInCents > 0) {
-            $this->logger->warning(sprintf(
-                '    ! Residente %s (ID: %s) no tiene fracción ideal definida, pero existen gastos (%.2f) que se distribuyen por fracción. Su parte será 0.',
-                $resident->unit(), $resident->id(), $sumOfFractionBasedExpensesInCents / 100
-            ));
-        }
-
-        return $residentSlipAmountInCents;
-    }
-
-    private function fifthBussinessDayOfMonth(\DateTimeInterface $targetMonthDate): \DateTimeInterface
-    {
-        $firstDayOfNextMonth = $targetMonthDate
-            ->modify('first day of next month')
-            ->setTime(0, 0, 0);
-
-        $businessDaysCount = 0;
-        $currentDay = $firstDayOfNextMonth;
-
-        while ($businessDaysCount < 5) {
-            $dayOfWeek = (int)$currentDay->format('N');
-            if ($dayOfWeek >= 1 && $dayOfWeek <= 5) {
-                $businessDaysCount++;
-            }
-
-            if ($businessDaysCount < 5) {
-                $currentDay = $currentDay->modify('+1 day');
-            }
-        }
-
-        return $currentDay;
     }
 }

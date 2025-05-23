@@ -2,15 +2,17 @@
 
 namespace App\Form\Admin;
 
+// Mantenha os uses existentes
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType as SymfonyCollectionType;
+use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Form\FormInterface;
-use Symfony\Component\Form\FormView;
+use Symfony\Component\Form\FormView; // Adicionar este use
+use Symfony\Component\Form\FormInterface; // Adicionar este use
 
 class GenerateSlipsFormType extends AbstractType
 {
@@ -18,42 +20,56 @@ class GenerateSlipsFormType extends AbstractType
     {
         $builder
             ->add('targetMonth', DateType::class, [
-                'label' => 'Mês de Referência',
+                'label' => 'Mês de Referência para Geração',
                 'widget' => 'single_text',
                 'html5' => true,
-                'input' => 'string',
-                'format' => 'yyyy-MM-dd',
-                'data' => date('Y-m-d'),
+                'input' => 'datetime_immutable',
                 'attr' => [
                     'class' => 'form-control',
+                    'placeholder' => 'AAAA-MM',
                 ],
-                'constraints' => [
-                    new NotBlank(['message' => 'Por favor, selecione um mês.']),
-                ],
-                'help' => 'Selecione o primeiro dia do mês para o qual deseja gerar os boletos. Exemplo, 01/05/2025 para gerar em junho os boletos de maio.',
+                'help' => 'Selecione o mês desejado.',
+            ])
+            ->add('recurringExpenses', SymfonyCollectionType::class, [
+                'entry_type' => RecurringExpenseItemFormType::class,
+                'entry_options' => ['label' => false],
+                'allow_add' => false,
+                'allow_delete' => false,
+                'label' => false,
+                'by_reference' => false,
+                'attr' => ['class' => 'recurring-expenses-collection'],
             ]);
 
-        // Este campo solo se mostrará/usará si es necesario confirmar
         if ($options['needs_confirmation']) {
             $builder->add('confirm_regeneration', CheckboxType::class, [
                 'label' => sprintf(
-                    'Sim, confirmo a regeração de %d boleto(s) para %s.',
+                    'Sim, desejo regerar os %d boletos para %s.',
                     $options['existing_slips_count'],
-                    $options['month_to_confirm'] ? $options['month_to_confirm']->format('F Y') : ''
+                    $options['month_to_confirm'] ? $options['month_to_confirm']->format('F Y') : 'o mês selecionado'
                 ),
-                'required' => true,
                 'mapped' => false,
+                'required' => true,
                 'constraints' => [
-                    new NotBlank(['message' => 'Você deve confirmar a regeração.']),
+                    new Assert\IsTrue(['message' => 'Você deve confirmar a regeração para prosseguir.']),
                 ],
-                'attr' => ['class' => 'form-check-input'],
             ]);
         }
 
         $builder->add('submit', SubmitType::class, [
-            'label' => $options['needs_confirmation'] ? 'Confirmar e Gerar Boletos' : 'Gerar Boletos',
+            'label' => 'Gerar Boletos',
             'attr' => ['class' => 'btn btn-primary mt-3'],
         ]);
+    }
+
+    // ADICIONAR/MODIFICAR ESTE MÉTODO
+    public function buildView(FormView $view, FormInterface $form, array $options): void
+    {
+        parent::buildView($view, $form, $options); // Chama o buildView pai, se houver
+
+        // Passa explicitamente as opções para as variáveis da view
+        $view->vars['needs_confirmation'] = $options['needs_confirmation'];
+        $view->vars['month_to_confirm'] = $options['month_to_confirm'];
+        $view->vars['existing_slips_count'] = $options['existing_slips_count'];
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -63,17 +79,8 @@ class GenerateSlipsFormType extends AbstractType
             'month_to_confirm' => null,
             'existing_slips_count' => 0,
         ]);
-
         $resolver->setAllowedTypes('needs_confirmation', 'bool');
         $resolver->setAllowedTypes('month_to_confirm', ['null', \DateTimeInterface::class]);
         $resolver->setAllowedTypes('existing_slips_count', 'int');
-    }
-
-    public function buildView(FormView $view, FormInterface $form, array $options): void
-    {
-        parent::buildView($view, $form, $options); // Buena práctica llamar al padre
-        $view->vars['needs_confirmation'] = $options['needs_confirmation'];
-        $view->vars['month_to_confirm'] = $options['month_to_confirm'];
-        $view->vars['existing_slips_count'] = $options['existing_slips_count'];
     }
 }

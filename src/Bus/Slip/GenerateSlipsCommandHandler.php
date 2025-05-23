@@ -94,5 +94,7 @@ readonly class GenerateSlipsCommandHandler
         } catch (ExceptionInterface $e) {
             $this->logger->error('[GenerateSlipsCommandHandler] Exceção na geração dos boletos');
         }
+
+        return $result;
     }
 }

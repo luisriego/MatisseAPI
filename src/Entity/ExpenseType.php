@@ -129,19 +129,6 @@ class ExpenseType
     {
         if (!$this->expenses->contains($expense)) {
             $this->expenses->add($expense);
-            $expense->setType($this);
-        }
-
-        return $this;
-    }
-
-    public function removeExpense(Expense $expense): static
-    {
-        if ($this->expenses->removeElement($expense)) {
-            // set the owning side to null (unless already changed)
-            if ($expense->getType() === $this) {
-                $expense->setType(null);
-            }
         }
 
         return $this;

@@ -272,7 +272,6 @@
                 <target>Editar conteúdo</target>
             </trans-unit>
 
-
             <trans-unit id="menu.expense_list">
                 <source>menu.expense_list</source>
                 <target>Lista de despesas</target>
@@ -457,10 +456,6 @@
                 <source>paginator.current</source>
                 <target>(atual)</target>
             </trans-unit>
-<!--             <trans-unit id="menu.expense_list"> -->
-<!--                 <source>menu.expense_list</source> -->
-<!--                 <target>Lista de despesas</target> -->
-<!--             </trans-unit> -->
 
             <trans-unit id="menu.expense">
                 <source>menu.expense</source>
@@ -486,6 +481,33 @@
                 <source>expense.list.title</source>
                 <target>Lista de despesas</target>
             </trans-unit>
+            <trans-unit id="expense.filter_by_month">
+                <source>expense.filter_by_month</source>
+                <target>Lista de despesas por mes</target>
+            </trans-unit>
+
+            <!-- Novas traduções para campos de despesa -->
+            <trans-unit id="expense.field.description">
+                <source>expense.field.description</source>
+                <target>Descrição</target>
+            </trans-unit>
+            <trans-unit id="expense.field.amount">
+                <source>expense.field.amount</source>
+                <target>Valor</target>
+            </trans-unit>
+            <trans-unit id="expense.field.date">
+                <source>expense.field.date</source>
+                <target>Data</target>
+            </trans-unit>
+            <trans-unit id="expense.field.account">
+                <source>expense.field.account</source>
+                <target>Conta</target>
+            </trans-unit>
+            <trans-unit id="actions">
+                <source>actions</source>
+                <target>Ações</target>
+            </trans-unit>
+            <!-- Fim das novas traduções para campos de despesa -->
 
             <trans-unit id="menu.income">
                 <source>menu.income</source>
@@ -520,8 +542,17 @@
                 <source>admin.slip_generation_title</source>
                 <target>Gerar boletos</target>
             </trans-unit><trans-unit id="slip.list_action">
-                <source>slip.list_action</source>
-                <target>Listar boletos gerados</target>
+            <source>slip.list_action</source>
+            <target>Listar boletos gerados</target>
+        </trans-unit>
+
+            <trans-unit id="income.list.data_from_bank_api">
+                <source>income.list.data_from_bank_api</source>
+                <target>Esta lista deve mostrar os boletos pagos diretamente da API do banco</target>
+            </trans-unit>
+            <trans-unit id="expense.list.no_expenses_found">
+                <source>expense.list.no_expenses_found</source>
+                <target>Nenhuma despesa encontrada para o periodo selecionado.</target>
             </trans-unit>
         </body>
     </file>

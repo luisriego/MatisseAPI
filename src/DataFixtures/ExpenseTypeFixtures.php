@@ -19,8 +19,8 @@ class ExpenseTypeFixtures extends Fixture
         'MR7CP' => ['name' => 'CONTROLE_PRAGAS', 'description' => 'Dedetizações periódicas ou emergenciais (baratas, ratos, cupins, etc.).', 'distributionMethod' => 'EQUAL', 'isRecurring' => false],
 
         // Serviços Públicos / Contas de Consumo (SP)
-        'SP1EL' => ['name' => 'ELETRICIDADE_AREAS_COMUNS', 'description' => 'Conta de luz de corredores, elevador(es), bombas, portões, iluminação externa.', 'distributionMethod' => 'EQUAL', 'isRecurring' => true],
-        'SP2AG' => ['name' => 'AGUA_ESGOTO_AREAS_COMUNS', 'description' => 'Conta de água/esgoto para limpeza, jardinagem (se não individualizada), consumo da portaria.', 'distributionMethod' => 'FRACTION', 'isRecurring' => true],
+        'SP1EL' => ['name' => 'CEMIG', 'description' => 'Conta de luz de corredores, elevador(es), bombas, portões, iluminação externa.', 'distributionMethod' => 'EQUAL', 'isRecurring' => true],
+        'SP2AG' => ['name' => 'COPASA', 'description' => 'Conta de água/esgoto para limpeza, jardinagem (se não individualizada), consumo da portaria.', 'distributionMethod' => 'FRACTION', 'isRecurring' => true],
         'SP3GA' => ['name' => 'GAS_TOTAL_A_COMPENSAR', 'description' => 'Total a compensar pelas unidades consumidoras', 'distributionMethod' => 'INDIVIDUAL', 'isRecurring' => true],
         'SP4TC' => ['name' => 'INTERNET_DO_CFTV', 'description' => 'Linha telefônica/internet', 'distributionMethod' => 'EQUAL', 'isRecurring' => true],
 
