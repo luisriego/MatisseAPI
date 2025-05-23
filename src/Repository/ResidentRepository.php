@@ -42,4 +42,18 @@ class ResidentRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return Resident[]
+     */
+    public function findAllActive(): array
+    {
+        // Assuming all residents in the table are considered "active"
+        // as there's no specific 'isActive' or 'status' field in the Resident entity.
+        // Ordering by 'unit' as 'name' is not a field in Resident.php.
+        return $this->createQueryBuilder('r')
+            ->orderBy('r.unit', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

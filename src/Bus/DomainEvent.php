@@ -11,6 +11,13 @@ abstract readonly class DomainEvent
         private string $occurredOn,
     ) {}
 
+    /**
+     * @param string $aggregateId
+     * @param array<string, mixed> $body
+     * @param string $eventId
+     * @param string $occurredOn
+     * @return static
+     */
     abstract public static function fromPrimitives(
         string $aggregateId,
         array $body,
@@ -20,6 +27,9 @@ abstract readonly class DomainEvent
 
     abstract public static function eventName(): string;
 
+    /**
+     * @return array<string, mixed>
+     */
     abstract public function toPrimitives(): array;
 
     final public function aggregateId(): string
