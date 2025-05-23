@@ -4,6 +4,20 @@ namespace App\Bus\RecurringExpense;
 
 class CreateRecurringExpenseCommand
 {
+    /**
+     * @param string $description
+     * @param int|null $amount
+     * @param int $expenseTypeId
+     * @param string $accountId
+     * @param string $frequency
+     * @param int $dueDay
+     * @param int[]|null $monthsOfYear array of int (1-12) or null
+     * @param \DateTimeInterface $startDate
+     * @param \DateTimeImmutable|null $endDate
+     * @param int|null $occurrencesLeft
+     * @param bool $isActive
+     * @param string|null $notes
+     */
     public function __construct(
         public string $description,
         public ?int $amount, // em céntimos

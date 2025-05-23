@@ -22,9 +22,11 @@ readonly class GenerateSlipsCommandHandler
 
     /**
      * @throws \DateMalformedStringException
+     * @return array<string, mixed>
      */
     public function __invoke(GenerateSlipsCommand $command): array
     {
+        $result = ['success' => false, 'message' => 'Handler execution did not complete successfully.', 'slipsData' => [], 'slipsCount' => 0];
         $this->logger->info(
             '[GenerateSlipsCommandHandler] Command process was initiated.',
             ['targetMonth' => $command->targetMonthDateString]

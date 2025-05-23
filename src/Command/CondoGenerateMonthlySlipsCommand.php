@@ -18,6 +18,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\Uid\Uuid;
 
 #[AsCommand(
     name: 'app:condo:generate-monthly-slips',
@@ -25,7 +26,7 @@ use Symfony\Component\Clock\ClockInterface;
 )]
 final class CondoGenerateMonthlySlipsCommand extends Command
 {
-    private const string GAS_RESTITUTION_INCOME_TYPE_CODE = 'GAS_REST';
+    private const GAS_RESTITUTION_INCOME_TYPE_CODE = 'GAS_REST';
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -165,14 +166,18 @@ final class CondoGenerateMonthlySlipsCommand extends Command
 
                 $dueDate = $this->clock->now()->modify('first day of next month')->modify('+9 days');
 
+                $slipId = Uuid::v4()->toRfc4122();
                 $slip = Slip::create(
-                    $resident,
+                    $slipId,
                     $finalSlipAmountInCents,
-                    $dueDate,
-                    sprintf('Boleto Condominial %s', $monthName),
-                    (int)$year,
-                    (int)$month
+                    $dueDate
                 );
+                $slip->setResidence($resident);
+                // TODO: Consider adding description, year, and month to Slip entity if needed
+                // For now, these are omitted as per instructions.
+                // $slip->setDescription(sprintf('Boleto Condominial %s', $monthName));
+                // $slip->setYear((int)$year);
+                // $slip->setMonth((int)$month);
 
                 $this->entityManager->persist($slip);
                 $slipsGenerated++;
@@ -201,6 +206,7 @@ final class CondoGenerateMonthlySlipsCommand extends Command
 
     /**
      * Lógica para verificar gastos recurrentes.
+     * @var \App\Entity\Expense[] $monthlyExpenses
      */
     private function checkRecurringExpenses(array $monthlyExpenses, string $year, string $month): array
     {
