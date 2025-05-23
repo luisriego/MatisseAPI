@@ -35,6 +35,9 @@ class Resident
     #[ORM\Column(type: 'datetime')]
     private DateTime $updatedAt;
 
+    #[ORM\Column(type: 'float')]
+    private float $IdealFraction = 0.0;
+
     #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'resident', cascade: ['persist'], orphanRemoval: true)]
     private Collection $users;
 
@@ -70,6 +73,16 @@ class Resident
     public function unit(): string
     {
         return $this->unit;
+    }
+
+    public function idealFraction(): float
+    {
+        return $this->IdealFraction;
+    }
+
+    public function setIdealFraction(float $IdealFraction): void
+    {
+        $this->IdealFraction = $IdealFraction;
     }
 
     public function createdAt(): DateTimeImmutable

@@ -1,0 +1,32 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}{{ page_title_text|default('Novo Tipo de Despesa') }}{% endblock %}
+
+{% block page_title %}{{ page_title_text|default('Novo Tipo de Despesa') }}{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{{ path('admin_expense_type_index') }}">Tipos de Despesa</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Novo</li>
+{% endblock %}
+
+{% block admin_page_content %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">{{ page_title_text|default('Criar Novo Tipo de Despesa') }}</h5>
+        </div>
+        <div class="card-body">
+            {{ form_start(form) }}
+            {# Puedes renderizar campos individualmente si necesitas más control #}
+            {# {{ form_row(form.name) }} #}
+            {# {{ form_row(form.description) }} #}
+            {# {{ form_row(form.code) }} #}
+            {# {{ form_row(form.distributionMethod) }} #}
+            {# {{ form_row(form.isRecurring) }} #}
+            {# {{ form_row(form.save) }} #}
+
+            {# O renderizar todo el formulario de una vez #}
+            {{ form_widget(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

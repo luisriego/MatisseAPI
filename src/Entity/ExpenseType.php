@@ -19,6 +19,10 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: ExpenseTypeRepository::class)]
 class ExpenseType
 {
+    public const string EQUAL = 'EQUAL';
+    public const string FRACTION = 'FRACTION';
+    public const string INDIVIDUAL = 'INDIVIDUAL';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -29,6 +33,12 @@ class ExpenseType
 
     #[ORM\Column(length: 100)]
     private ?string $name = null;
+
+    #[ORM\Column(length: 10)]
+    private ?string $distributionMethod = 'EQUAL';
+
+    #[ORM\Column(nullable: true)]
+    private bool $isRecurring = false;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $description = null;
@@ -41,7 +51,9 @@ class ExpenseType
 
     public function __construct()
     {
+        $this->distributionMethod = ExpenseType::EQUAL;
         $this->expenses = new ArrayCollection();
+        $this->isRecurring = false;
     }
 
     public function id(): ?int
@@ -85,6 +97,26 @@ class ExpenseType
         return $this;
     }
 
+    public function distributionMethod(): ?string
+    {
+        return $this->distributionMethod;
+    }
+
+    public function setDistributionMethod(string $distributionMethod): void
+    {
+        $this->distributionMethod = $distributionMethod;
+    }
+
+    public function isRecurring(): bool
+    {
+        return $this->isRecurring;
+    }
+
+    public function setIsRecurring(bool $isRecurring): void
+    {
+        $this->isRecurring = $isRecurring;
+    }
+
     /**
      * @return Collection<int, Expense>
      */
@@ -97,19 +129,6 @@ class ExpenseType
     {
         if (!$this->expenses->contains($expense)) {
             $this->expenses->add($expense);
-            $expense->setType($this);
-        }
-
-        return $this;
-    }
-
-    public function removeExpense(Expense $expense): static
-    {
-        if ($this->expenses->removeElement($expense)) {
-            // set the owning side to null (unless already changed)
-            if ($expense->getType() === $this) {
-                $expense->setType(null);
-            }
         }
 
         return $this;

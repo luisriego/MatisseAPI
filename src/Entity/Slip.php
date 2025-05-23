@@ -1,13 +1,6 @@
 <?php
 
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
+declare(strict_types=1);
 
 namespace App\Entity;
 
@@ -27,18 +20,47 @@ class Slip
     #[ORM\Column(length: 25, nullable: true)]
     private ?string $status = null;
 
-    #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    #[ORM\Column(type: 'datetime_immutable')]
+    private \DateTimeImmutable $dueDate;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private \DateTimeImmutable $createdAt;
 
     #[ORM\ManyToOne(inversedBy: 'slips')]
     private ?Resident $residence = null;
 
-    public function getId(): ?int
+    public function __construct(
+        string $id,
+        int $amount,
+        \DateTimeInterface $dueDate
+    )
+    {
+        $this->id = $id;
+        $this->amount = $amount;
+        if (!$dueDate instanceof \DateTimeImmutable) {
+            $this->dueDate = \DateTimeImmutable::createFromInterface($dueDate);
+        } else {
+            $this->dueDate = $dueDate;
+        }
+        $this->createdAt = new \DateTimeImmutable();
+    }
+
+    public static function create(
+        string $id,
+        int $amount,
+        \DateTimeInterface $dueDate
+    ): self
+    {
+
+        return new self($id, $amount, $dueDate);
+    }
+
+    public function id(): ?string
     {
         return $this->id;
     }
 
-    public function getAmount(): ?int
+    public function amount(): ?int
     {
         return $this->amount;
     }
@@ -50,7 +72,12 @@ class Slip
         return $this;
     }
 
-    public function getStatus(): ?string
+    public function dueDate(): ?\DateTimeImmutable
+    {
+        return $this->dueDate;
+    }
+
+    public function status(): ?string
     {
         return $this->status;
     }
@@ -62,7 +89,7 @@ class Slip
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function createdAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -74,7 +101,7 @@ class Slip
         return $this;
     }
 
-    public function getResidence(): ?Resident
+    public function residence(): ?Resident
     {
         return $this->residence;
     }

@@ -17,22 +17,28 @@ class ResidenceFixtures extends Fixture
 
         $UnitsData = [
             Resident::AP_101 => [
-                'name' => 'APARTAMENTO 101'
+                'name' => 'APARTAMENTO 101',
+                'fraction' => 0.18131760
             ],
             Resident::AP_201 => [
-                'name' => 'APARTAMENTO 201'
+                'name' => 'APARTAMENTO 201',
+                'fraction' => 0.18131760
             ],
             Resident::AP_301 => [
-                'name' => 'APARTAMENTO 301'
+                'name' => 'APARTAMENTO 301',
+                'fraction' => 0.18131760
             ],
             Resident::AP_401 => [
-                'name' => 'APARTAMENTO 401'
+                'name' => 'APARTAMENTO 401',
+                'fraction' => 0.19816930
             ],
             Resident::AP_501 => [
-                'name' => 'APARTAMENTO 501'
+                'name' => 'APARTAMENTO 501',
+                'fraction' => 0.25787790
             ],
             Resident::CONDO => [
-                'name' => 'CONDOMINIO'
+                'name' => 'CONDOMINIO',
+                'fraction' => 0
             ],
         ];
 
@@ -44,9 +50,10 @@ class ResidenceFixtures extends Fixture
                     Uuid::v4()->toRfc4122(),
                     $unitData,
                 );
+                $unit->setIdealFraction($data['fraction']);;
 
                 $manager->persist($unit);
-                echo "  - Added Unit: $unitData - {$data['name']}\n";
+                echo "  - Added Unit: $unitData - {$data['name']} - {$data['fraction']}\n";
 
                 $this->addReference('resident_' . $unitData, $unit);
             } else {

@@ -29,7 +29,7 @@
                         </button>
 
                         <div class="navbar-collapse collapse" id="appNavbar">
-                            <ul class="navbar-nav ml-auto">
+                            <ul class="navbar-nav ms-auto align-items-center">
                                 {% block header_navigation_links %}
                                     <li class="nav-item{{ _route == 'blog_index' ? ' active' : '' }}">
                                         <a class="nav-link" href="{{ path('blog_index') }}">
@@ -82,21 +82,22 @@
         <div class="container body-container">
             {% block body %}
                 <div class="row">
-                    <div id="main" class="col-sm-9">
-                        {{ include('default/_flash_messages.html.twig') }}
-
+                    <div id="main" class="{% block main_column_class %}col-sm-9{% endblock %}">
+                        {# Flash messages are included in admin/layout.html.twig,
+                           or if you want them truly global for non-admin pages too,
+                           you could move the include here and remove from admin/layout.
+                           For now, assuming admin/layout handles it for admin section.
+                        #}
                         {% block main %}{% endblock %}
                     </div>
 
-                    <div id="sidebar" class="col-sm-3">
-                        {% block sidebar %}
-{#                            {{ render_esi(controller('Symfony\\Bundle\\FrameworkBundle\\Controller\\TemplateController::templateAction', {#}
-{#                                'template': 'blog/about.html.twig',#}
-{#                                'sharedAge': 600,#}
-{#                                '_locale': app.locale#}
-{#                            })) }}#}
-                        {% endblock %}
-                    </div>
+                    {# Only render sidebar div if the sidebar block is expected to have content #}
+                    {% set sidebar_content = block('sidebar') %}
+                    {% if sidebar_content|trim is not empty %}
+                        <div id="sidebar" class="{% block sidebar_column_class %}col-sm-3{% endblock %}">
+                            {{ sidebar_content|raw }} {# Use raw if sidebar_content is already rendered HTML #}
+                        </div>
+                    {% endif %}
                 </div>
             {% endblock %}
         </div>

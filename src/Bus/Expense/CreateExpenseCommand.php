@@ -7,7 +7,7 @@ namespace App\Bus\Expense;
 readonly class CreateExpenseCommand
 {
     public function __construct(
-        public string $expenseTypeId,
+        public int $expenseTypeId,
         public int    $amount,
         public ?string $description,
         public string $date,

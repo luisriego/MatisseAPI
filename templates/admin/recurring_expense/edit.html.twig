@@ -1,0 +1,95 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Editar Despesa Recorrente - {{ recurring_expense.description }}{% endblock %}
+
+{% block page_title %}Editar Despesa Recorrente{% endblock %}
+
+{% block admin_page_content %}
+    <div class="card card-primary">
+        <div class="card-header">
+            <h3 class="card-title">Editando: {{ recurring_expense.description }}</h3>
+        </div>
+        <!-- /.card-header -->
+        <!-- form start -->
+        {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+        <div class="card-body">
+            {# Mostrar errores globales del formulario si los hay #}
+            {{ form_errors(form) }}
+
+            <div class="row">
+                <div class="col-md-8">
+                    {{ form_row(form.description) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.amount) }}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.expenseType) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.frequency) }}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    {{ form_row(form.dueDay) }}
+                </div>
+                <div class="col-md-8">
+                    {# El campo monthsOfYear es un ChoiceType expandido, se renderiza bien con form_row #}
+                    {{ form_row(form.monthsOfYear) }}
+                </div>
+            </div>
+
+            <hr>
+            <h4>Período da Recorrência</h4>
+
+            <div class="row">
+                <div class="col-md-4">
+                    {{ form_row(form.startDate) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.endDate) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.occurrencesLeft) }}
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="row">
+                <div class="col-md-12">
+                    {{ form_row(form.notes) }}
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    {{ form_row(form.isActive) }}
+                </div>
+            </div>
+
+        </div>
+        <!-- /.card-body -->
+
+        <div class="card-footer">
+            {{ form_widget(form.save, {'label': 'Atualizar Despesa Recorrente', 'attr': {'class': 'btn btn-success'}}) }}
+            <a href="{{ path('admin_recurring_expense_index') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+        {{ form_end(form) }}
+    </div>
+    <!-- /.card -->
+{% endblock %}
+
+{% block sidebar %}
+    <div class="mb-3"> {# section actions no es una clase Bootstrap estándar, usando mb-3 #}
+        <a href="{{ path('admin_recurring_expense_index') }}" class="btn btn-outline-secondary d-block"> {# d-block para ancho completo, outline para un look secundario #}
+            <twig:ux:icon name="tabler:list" class="me-1"/> {{ 'expense.list_action'|trans }}
+        </a>
+    </div>
+    {{ parent() }}
+{% endblock %}

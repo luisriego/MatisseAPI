@@ -31,12 +31,17 @@ class ExpenseTypeRepository extends ServiceEntityRepository
         }
     }
 
-    public function findOneByIdOrFail(string $id): ExpenseType
+    public function findOneByIdOrFail(int $id): ExpenseType
     {
         if (null === $expenseType = $this->findOneBy(['id' => $id])) {
             throw new \InvalidArgumentException(sprintf('The expense type with id "%s" does not exist.', $id));
         }
 
         return $expenseType;
+    }
+
+    public function findAllActivesOrderedByCode(): array
+    {
+        return $this->findBy([], ['code' => 'ASC']);
     }
 }
