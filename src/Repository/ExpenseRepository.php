@@ -153,4 +153,18 @@ class ExpenseRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function getTotalAmountForCurrentMonth(): int
+    {
+        $startDate = new \DateTimeImmutable('first day of this month 00:00:00');
+        $endDate = new \DateTimeImmutable('last day of this month 23:59:59');
+
+        return (int) $this->createQueryBuilder('e')
+            ->select('SUM(e.amount)')
+            ->where('e.dueDate BETWEEN :startDate AND :endDate')
+            ->setParameter('startDate', $startDate)
+            ->setParameter('endDate', $endDate)
+            ->getQuery()
+            ->getSingleScalarResult() ?? 0;
+    }
 }
