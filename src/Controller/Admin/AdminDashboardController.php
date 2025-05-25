@@ -25,11 +25,19 @@ class AdminDashboardController extends AbstractController
     #[Route('/admin', name: 'admin_dashboard', methods: ['GET'])]
     public function __invoke(): Response
     {
+        $targetMonthDate = new \DateTime();
+        $year = $targetMonthDate->format('Y');
+        $month = $targetMonthDate->format('n');
+
         $totalRecurringExpenses = $this->recurringExpenseRepository->count([]);
         $activeRecurringExpenses = $this->recurringExpenseRepository->count(['isActive' => true]);
         $totalExpenseTypes = $this->expenseTypeRepository->count([]);
         $totalIncomes = $this->incomeRepository->count([]);
         $totalExpenses = $this->expenseRepository->count([]);
+        $expenses = $this->expenseRepository->findByMonth($month, $year);
+
+        $totalExpensesAmountCents = $this->expenseRepository->getTotalAmountForCurrentMonth();
+
 
         return $this->render('admin/dashboard/index.html.twig', [
             'totalRecurringExpenses' => $totalRecurringExpenses,
@@ -38,6 +46,8 @@ class AdminDashboardController extends AbstractController
             'totalExpenseTypes' => $totalExpenseTypes,
             'totalIncomes' => $totalIncomes,
             'totalExpenses' => $totalExpenses,
+            'totalExpensesInCents' => $totalExpensesAmountCents,
+            'expenses' => $expenses
         ]);
     }
 }

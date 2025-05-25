@@ -14,18 +14,16 @@
 {# Despesas Recorrentes #}
 <li class="nav-item">
     <a href="{{ path('admin_recurring_expense_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'admin_recurring_expense_' %}active{% endif %}">
-        <twig:ux:icon name="tabler:repeat" class="me-2"/>Despesas Recorrentes {# Icono cambiado para consistencia #}
+        <twig:ux:icon name="tabler:repeat" class="me-2"/>Gastos fixos
     </a>
 </li>
 
-{# Tipos de Despesa - Comentado si la ruta no existe #}
-{#
 <li class="nav-item">
     <a href="{{ path('admin_expense_type_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'admin_expense_type_' %}active{% endif %}">
         <twig:ux:icon name="tabler:tags" class="me-2"/>Tipos de Despesa
     </a>
 </li>
-#}
+
 
 {# Receitas #}
 <li class="nav-item">
@@ -47,7 +45,10 @@
 
 {# Gerar Boletos #}
 <li class="nav-item">
-    <a class="nav-link {% if app.request.attributes.get('_route') == 'admin_slip_generation' %}active{% endif %}" href="{{ path('admin_slip_generation') }}">
+    {% set isActive = (app.request.attributes.get('_route') == 'admin_slip_generation') %}
+    <a class="nav-link {% if isActive %}active{% endif %}"
+       href="{{ path('admin_slip_generation') }}"
+       {% if isActive %}style="color: #0d6efd !important; background-color: transparent !important;"{% endif %}>
         <twig:ux:icon name="tabler:brand-cashapp" class="me-2"/> Gerar Boletos
     </a>
 </li>

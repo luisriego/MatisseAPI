@@ -11,29 +11,17 @@
 {% endblock %}
 
 {% block main %}
-    <div class="container-fluid mt-0"> {# Alterado para container-fluid e mt-0 para usar todo o espaço #}
-
-        {# Flash messages são incluídos pelo admin/layout.html.twig, mas se precisar de controle local, descomente:
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endfor %}
-        #}
+    <div class="container-fluid mt-0">
 
         {{ form_start(form) }}
         <div class="row">
-            <div class="col-lg-12"> {# Coluna principal para formulário e tabelas #}
+            <div class="col-lg-12">
                 <div class="card mb-8">
                     <div class="card-header">
                         <h5 class="card-title mb-0">1. Selecione o Mês de Referência</h5>
                     </div>
                     <div class="card-body">
-                        <div class="mb-0"> {# Removido mb-3 para layout mais compacto #}
-                            {# {{ form_label(form.targetMonth) }} #} {# Label já está no card-header #}
+                        <div class="mb-0">
                             {{ form_widget(form.targetMonth, {'attr': {'onchange': 'this.form.submit()'}}) }}
                             <small class="form-text text-muted">{{ form_help(form.targetMonth) }}</small>
                             {{ form_errors(form.targetMonth) }}
@@ -47,43 +35,38 @@
                         <div class="card-header">
                             <h5 class="card-title mb-0">2. Confirme os Gastos Recorrentes para o Mês</h5>
                         </div>
-                        <div class="card-body p-0"> {# p-0 para a tabela ocupar todo o card-body #}
-                            {# {{ form_label(form.recurringExpenses) }} #} {# Label já está no card-header #}
+                        <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-sm mb-0 align-middle"> {# table-hover, table-sm, mb-0, align-middle para toda a tabela #}
-                                    <thead class="table-light"> {# Cabeçalho com fundo leve para destaque #}
+                                <table class="table table-hover table-sm mb-0 align-middle">
+                                    <thead class="table-light">
                                     <tr>
                                         <th style="width: 70px;" class="text-center">{{ 'Incluir'|trans }}</th>
                                         <th>{{ 'Descrição do Gasto Recorrente'|trans }}</th>
                                         <th>{{ 'Data de Vencimento'|trans }}</th>
-                                        <th style="width: 200px;">{{ 'Valor (R$)'|trans }}</th> {# Aumentei um pouco a largura para o input de valor #}
+                                        <th style="width: 200px;">{{ 'Valor (R$)'|trans }}</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     {% for item_form in form.recurringExpenses %}
                                         <tr>
                                             <td class="text-center">
-                                                {# Envolve o checkbox para melhor controle de layout e clique #}
-                                                <div class="form-check d-inline-flex justify-content-center align-items-center" style="min-height: 31px;"> {# d-inline-flex e min-height para alinhar com o input de texto #}
+                                                <div class="form-check d-inline-flex justify-content-center align-items-center" style="min-height: 31px;">
                                                     {{ form_widget(item_form.include, {'attr': {'class': 'form-check-input'}}) }}
                                                 </div>
                                                 {{ form_errors(item_form.include) }}
                                             </td>
                                             <td>
-                                                {# A descrição do gasto recorrente atua como o label principal da linha #}
-                                                {# Associar o label ao checkbox para melhorar a usabilidade #}
                                                 <label for="{{ item_form.include.vars.id }}" class="form-check-label mb-0" style="cursor: pointer;">
                                                     {{ item_form.vars.data.description | default('Descrição não disponível') }}
                                                 </label>
-                                                {{ form_widget(item_form.recurringExpenseId) }} {# Campo oculto com o ID #}
-                                                {{ form_widget(item_form.description) }} {# Campo oculto com a descrição (para o form) #}
+                                                {{ form_widget(item_form.recurringExpenseId) }}
+                                                {{ form_widget(item_form.description) }}
                                             </td>
                                             <td>
                                                 {{ form_widget(item_form.dueDate) }}
                                                 {{ form_errors(item_form.dueDate) }}
                                             </td>
                                             <td>
-                                                {# O campo amount já tem 'form-control-sm' via RecurringExpenseItemFormType #}
                                                 {{ form_widget(item_form.amount) }}
                                                 {{ form_errors(item_form.amount) }}
                                             </td>
@@ -93,45 +76,41 @@
                                 </table>
                             </div>
                             {% if form.recurringExpenses.vars.errors|length > 0 %}
-                                <div class="alert alert-danger mb-0 p-2"> {# Estilo para erros da coleção #}
+                                <div class="alert alert-danger mb-0 p-2">
                                     {{ form_errors(form.recurringExpenses) }}
                                 </div>
                             {% endif %}
                         </div>
                     </div>
-                {% elseif form.targetMonth.vars.data is not null %} {# Mostra mensagem apenas se um mês foi efetivamente selecionado #}
+                {% elseif form.targetMonth.vars.data is not null %}
                     <div class="alert alert-info">Todos os gastos recorrentes configurados ou ativos para o mês selecionado, já foram incluídos.</div>
                 {% endif %}
 
-                {# Lógica de confirmação de boletos existentes #}
-                {% if form.vars.needs_confirmation and form.confirm_regeneration is defined %}
-                    <div class="card mb-8">
+                {# Lógica de ADVERTÊNCIA de boletos existentes (sem checkbox de confirmação) #}
+                {% if form.vars.needs_confirmation %} {# Apenas checa se a confirmação é necessária (boletos existem) #}
+                    <div class="card mb-8 mt-2 mb-2">
                         <div class="card-header">
-                            <h5 class="card-title mb-0">3. Confirmação de Regeração de Boletos</h5>
+                            {# Você pode manter este título ou simplificá-lo, já que não há mais uma "confirmação" ativa #}
+                            <h5 class="card-title mb-0">Atenção: Boletos Existentes</h5>
                         </div>
                         <div class="card-body">
                             <div class="alert alert-warning">
-                                <strong>Atenção!</strong> Já existem {{ form.vars.existing_slips_count }} boleto(s) para o mês de {{ form.vars.month_to_confirm|date('F Y', timezone='America/Sao_Paulo') }}.
+                                <strong>Atenção!</strong> Já existem {{ form.vars.existing_slips_count }} boleto(s) gerados para este mês.
+                                Clicar em "Gerar Novos Boletos e Eliminar os Existentes" irá substituí-los.
                             </div>
-                            <div class="mb-0 form-check"> {# Removido mb-3 #}
-                                {{ form_widget(form.confirm_regeneration) }}
-                                {{ form_label(form.confirm_regeneration) }}
-                                {{ form_errors(form.confirm_regeneration) }}
-                            </div>
+                            {% set submit_button_label = 'Gerar Boletos Agora' %}
+                            {% if form.vars.needs_confirmation %}
+                                {% set submit_button_label = 'Gerar Novos Boletos e Eliminar os Existentes' %}
+                            {% endif %}
+                            {{ form_widget(form.submit, {'label': submit_button_label|trans, 'attr': {'class': 'btn btn-primary btn-lg'}}) }}
                         </div>
                     </div>
                 {% endif %}
+            </div>
 
-                <div class="mt-3">
-                    {{ form_widget(form.submit, {'label': 'Gerar Boletos Agora', 'attr': {'class': 'btn btn-primary btn-lg'}}) }}
-                </div>
-
-            </div> {# Fim col-lg-8 #}
-
-            <div class="col-lg-12"> {# Coluna para a lista de despesas efetivas #}
-                {# SEÇÃO PARA EXIBIR DESPESAS JÁ REGISTRADAS (APÓS PROCESSAMENTO DAS RECORRENTES) #}
+            <div class="col-lg-12">
                 {% if selectedMonthName is defined and selectedMonthName is not empty %}
-                    <div class="card sticky-top" style="top: 70px;"> {# sticky-top para a lista acompanhar o scroll, ajuste 'top' conforme altura do seu header #}
+                    <div class="card sticky-top" style="top: 70px;">
                         <div class="card-header">
                             <h5 class="card-title mb-0">Despesas Efetivas para {{ selectedMonthName }}</h5>
                         </div>
@@ -144,8 +123,8 @@
                         </div>
                     </div>
                 {% endif %}
-            </div> {# Fim col-lg-4 #}
-        </div> {# Fim row #}
+            </div>
+        </div>
         {{ form_end(form) }}
     </div>
 {% endblock %}
