@@ -43,7 +43,7 @@
                     <tr>
                         <td>{{ type.code()|default('N/A') }}</td>
                         <td>{{ type.name()|default('N/A') }}</td>
-                        <td>{{ type.description()|slice(0, 70)|default('') }}{{ type.description()|length > 70 ? '...' : '' }}</td>
+                        <td>{{ type.description()|slice(0, 50)|default('') }}{{ type.description()|length > 50 ? '...' : '' }}</td>
                         <td>
                             {% if type.distributionMethod() == constant('App\\Entity\\ExpenseType::EQUAL') %}
                                 Igualitário
@@ -63,10 +63,11 @@
                             {% endif %}
                         </td>
                         <td class="text-end">
-                            {# La ruta 'admin_expense_type_edit' necesitará ser creada #}
-                            <a href="/" class="btn custom-btn-xs btn-outline-primary me-1" title="Editar">
-                                <twig:ux:icon name="tabler:edit"/>
+                            <a href="{{ path('admin_expense_type_edit', { id: type.id }) }}"
+                               class="btn custom-btn-xs btn-outline-primary">
+                                <twig:ux:icon name="tabler:edit" class="me-1"/>Editar
                             </a>
+
                             {# La ruta 'admin_expense_type_delete' necesitará ser creada #}
                             <form action="{{ path('admin_expense_type_new', { id: type.id() }) }}" method="post" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir este tipo de despesa? Esta ação não pode ser desfeita.');">
                                 <input type="hidden" name="_method" value="DELETE">
