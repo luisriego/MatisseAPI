@@ -4,14 +4,16 @@
 namespace App\Controller\Admin\Slip;
 
 use App\Bus\Slip\GenerateSlipsCommand;
-use App\Entity\Expense;
-use App\Entity\RecurringExpense;
-use App\Event\Expense\ExpenseWasCreated;
+// App\Entity\Expense; // No longer directly used in this controller after refactoring
+// App\Entity\RecurringExpense; // No longer directly used in this controller after refactoring
+// App\Event\Expense\ExpenseWasCreated; // No longer directly used in this controller
 use App\Form\Admin\GenerateSlipsFormType;
-use App\Repository\ExpenseRepository;
-use App\Repository\RecurringExpenseRepository;
+use App\Repository\ExpenseRepository; // Kept for findByMonthDueDateRange
+use App\Repository\RecurringExpenseRepository; // Kept for constructor, though not directly used in methods
 use App\Repository\SlipRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\Slip\RecurringExpenseHandlerService;
+use App\Service\Slip\SlipTargetMonthService;
+use Doctrine\ORM\EntityManagerInterface; // Kept for constructor
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,7 +22,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Uid\Uuid;
+// use Symfony\Component\Uid\Uuid; // No longer directly used
 
 #[Route('/admin/slips')]
 #[IsGranted('ROLE_ADMIN')]
@@ -29,27 +31,28 @@ class SlipGenerationController extends AbstractController
     public function __construct(
         private readonly SlipRepository $slipRepository,
         private readonly ExpenseRepository $expenseRepository,
-        private readonly RecurringExpenseRepository $recurringExpenseRepository,
-        private readonly EntityManagerInterface $entityManager,
-        private readonly MessageBusInterface $commandBus
+        private readonly RecurringExpenseRepository $recurringExpenseRepository, // Preserved as per instruction
+        private readonly EntityManagerInterface $entityManager, // Preserved as per instruction
+        private readonly MessageBusInterface $commandBus,
+        private readonly SlipTargetMonthService $slipTargetMonthService,
+        private readonly RecurringExpenseHandlerService $recurringExpenseHandlerService
     ) {
     }
 
-    /**
-     * @throws MessengerExceptionInterface
-     */
     #[Route('/generate', name: 'admin_slip_generation', methods: ['GET', 'POST'])]
     public function __invoke(Request $request): Response
     {
-        $effectiveTargetMonth = $this->determineEffectiveTargetMonth($request);
-        $recurringExpensesDataForForm = $this->prepareRecurringExpensesDataForForm($effectiveTargetMonth);
+        // Use SlipTargetMonthService to determine the effective month
+        $effectiveTargetMonth = $this->slipTargetMonthService->determine($request);
+
+        // Use RecurringExpenseHandlerService to get initial data for the form's recurringExpenses
+        $recurringExpensesDataForForm = $this->recurringExpenseHandlerService->getInitialRecurringExpensesData($effectiveTargetMonth);
 
         $yearForInitialCheck = (int)$effectiveTargetMonth->format('Y');
         $monthForInitialCheck = (int)$effectiveTargetMonth->format('m');
         $initialExistingSlipsCount = $this->slipRepository->countForMonth($yearForInitialCheck, $monthForInitialCheck);
 
         $formData = [
-            // CAMBIO: Usar el formato "Y-m" para que coincida con los valores del ChoiceType
             'targetMonth' => $effectiveTargetMonth->format('Y-m'),
             'recurringExpenses' => $recurringExpensesDataForForm,
         ];
@@ -64,16 +67,16 @@ class SlipGenerationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // $data = $form->getData();
-            // $data['targetMonth'] ahora es una cadena "YYYY-MM".
-            // Ya estamos usando $effectiveTargetMonth para la lógica principal,
-            // que se calcula correctamente a partir de esta cadena.
-
             /** @var array<int, array<string, mixed>> $submittedRecurringData */
-            $submittedRecurringData = $form->get('recurringExpenses')->getData() ?? []; // Mejor obtener así
+            $submittedRecurringData = $form->get('recurringExpenses')->getData() ?? [];
 
-            $this->processRecurringExpenseSelections($submittedRecurringData, $effectiveTargetMonth);
+            // Use RecurringExpenseHandlerService to process the submitted recurring expenses
+            $processingResult = $this->recurringExpenseHandlerService->processSelections($submittedRecurringData, $effectiveTargetMonth);
+            foreach ($processingResult['messages'] as $message) {
+                $this->addFlash($message['type'], $message['text']);
+            }
 
+            // Existing logic for dispatching GenerateSlipsCommand
             $command = new GenerateSlipsCommand($effectiveTargetMonth->format('Y-m-d'));
             $envelope = $this->commandBus->dispatch($command);
             /** @var HandledStamp|null $handledStamp */
@@ -91,15 +94,16 @@ class SlipGenerationController extends AbstractController
             } else {
                 $this->addFlash('info', sprintf(
                     'A solicitação para gerar boletos para %s foi enviada. Verifique os logs para o resultado do processamento.',
-                    $this->formatMonthName($effectiveTargetMonth)
+                    $this->formatMonthName($effectiveTargetMonth) // formatMonthName is kept for this
                 ));
             }
             return $this->redirectToRoute('admin_slip_generation', ['targetMonthInput' => $effectiveTargetMonth->format('Y-m')]);
         }
 
+        // Data for rendering the template
         $displayTargetMonthDate = $effectiveTargetMonth;
         $monthlyExpensesToDisplay = $this->expenseRepository->findByMonthDueDateRange($displayTargetMonthDate);
-        $selectedMonthNameToDisplay = $this->formatMonthName($displayTargetMonthDate);
+        $selectedMonthNameToDisplay = $this->formatMonthName($displayTargetMonthDate); // formatMonthName is kept for this
 
         $monthlySlipsToDisplay = [];
         if ($initialExistingSlipsCount > 0 || ($form->isSubmitted() && !$form->isValid())) {
@@ -117,273 +121,7 @@ class SlipGenerationController extends AbstractController
         ]);
     }
 
-    private function determineEffectiveTargetMonth(Request $request): \DateTimeImmutable
-    {
-        $baseDateStringForParsing = null; // Usaremos esto para la cadena "YYYY-MM-DD"
-        $appTimeZone = new \DateTimeZone('America/Sao_Paulo');
-
-        if ($request->isMethod('POST')) {
-            $formName = $this->createForm(GenerateSlipsFormType::class)->getName();
-            $submittedData = $request->request->all($formName);
-            if (isset($submittedData['targetMonth']) && is_string($submittedData['targetMonth']) && !empty($submittedData['targetMonth'])) {
-                // CAMBIO: $submittedData['targetMonth'] ahora es "YYYY-MM" del ChoiceType
-                $monthYearString = $submittedData['targetMonth'];
-                if (preg_match('/^\d{4}-\d{2}$/', $monthYearString)) {
-                    $baseDateStringForParsing = $monthYearString . '-01'; // Convertir "YYYY-MM" a "YYYY-MM-01"
-                }
-            }
-        }
-
-        if ($baseDateStringForParsing === null && $request->query->has('targetMonthInput')) {
-            $monthYearString = $request->query->getString('targetMonthInput'); // Esto es "YYYY-MM"
-            if (preg_match('/^\d{4}-\d{2}$/', $monthYearString)) {
-                $baseDateStringForParsing = $monthYearString . '-01'; // Convertir "YYYY-MM" a "YYYY-MM-01"
-            }
-        }
-
-        if ($baseDateStringForParsing) {
-            try {
-                // $baseDateStringForParsing ahora es "YYYY-MM-01"
-                $date = new \DateTimeImmutable($baseDateStringForParsing, $appTimeZone);
-                return $date->modify('first day of this month')->setTime(12, 0, 0);
-            } catch (\Exception $e) {
-                $this->addFlash('warning', 'Formato de data inválido fornecido. Usando data padrão.');
-                // error_log("Error parsing date in determineEffectiveTargetMonth: " . $e->getMessage() . " | Input: " . $baseDateStringForParsing);
-            }
-        }
-
-        // Cálculo de fecha por defecto
-        $currentDateTime = new \DateTimeImmutable('now', $appTimeZone);
-        $day = (int)$currentDateTime->format('d');
-        $initialDefaultMonth = (int)$currentDateTime->format('n');
-        $initialDefaultYear = (int)$currentDateTime->format('Y');
-
-        if ($day < 9) {
-            $lastMonthDateTime = $currentDateTime->modify('last month');
-            $initialDefaultMonth = (int)$lastMonthDateTime->format('n');
-            $initialDefaultYear = (int)$lastMonthDateTime->format('Y');
-        }
-        return (new \DateTimeImmutable('now', $appTimeZone))
-            ->setDate($initialDefaultYear, $initialDefaultMonth, 1)
-            ->setTime(12, 0, 0);
-    }
-
-    // ... (El resto de los métodos: prepareRecurringExpensesDataForForm, isRecurringExpenseEffectivelyActive, processRecurringExpenseSelections, calculateExpenseDateForMonth, formatMonthName)
-    // NO necesitan cambios directos por esta modificación, ya que operan con $effectiveTargetMonth que es un DateTimeImmutable.
-    // Asegúrate de que calculateExpenseDateForMonth siga devolviendo la hora correcta (12:00) como en la versión anterior.
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function prepareRecurringExpensesDataForForm(\DateTimeInterface $targetMonthDate): array
-    {
-        $year = (int)$targetMonthDate->format('Y');
-        $month = (int)$targetMonthDate->format('n');
-        $preparedData = [];
-
-        $activeRecurringEntities = $this->recurringExpenseRepository->findActivesForThisMonth($month);
-
-        foreach ($activeRecurringEntities as $re) {
-            if (!$this->isRecurringExpenseEffectivelyActive($re, $year, $month)) {
-                continue;
-            }
-
-            if ($this->expenseRepository->hasInstanceForRecurringExpenseAndMonth($re, $year, $month)) {
-                continue;
-            }
-
-            $isIncluded = true;
-            $currentAmount = $re->amount();
-            $currentDueDate = $this->calculateExpenseDateForMonth($re, $targetMonthDate);
-
-            $preparedData[] = [
-                'recurringExpenseId' => $re->id(),
-                'description' => $re->description() ?: ('Recorrente ID: ' . $re->id()),
-                'include' => $isIncluded,
-                'dueDate' => $currentDueDate,
-                'amount' => $currentAmount,
-            ];
-        }
-        return $preparedData;
-    }
-
-    private function isRecurringExpenseEffectivelyActive(RecurringExpense $re, int $year, int $month): bool
-    {
-        $targetPeriodStart = (new \DateTimeImmutable())->setDate($year, $month, 1)->setTime(12,0,0);
-        $targetPeriodEnd = $targetPeriodStart->modify('last day of this month')->setTime(23,59,59);
-        $reStartDate = $re->startDate();
-        $reEndDate = $re->endDate();
-        if ($reStartDate && $reStartDate > $targetPeriodEnd) { return false; }
-        if ($reEndDate && $reEndDate < $targetPeriodStart->setTime(0,0,0) ) { return false; }
-        return true;
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $submittedRecurringData
-     * @throws MessengerExceptionInterface
-     */
-    private function processRecurringExpenseSelections(array $submittedRecurringData, \DateTimeInterface $targetMonthDate): void
-    {
-        $expensesWithoutAccounts = [];
-        $missingAmounts = [];
-        $generatedCount = 0;
-        $invalidRecurringExpenses = [];
-
-        foreach ($submittedRecurringData as $itemData) {
-            $recurringExpenseId = $itemData['recurringExpenseId'] ?? null;
-            if (!$recurringExpenseId) {
-                $invalidRecurringExpenses[] = 'ID não fornecido';
-                continue;
-            }
-
-            $recurringExpense = $this->recurringExpenseRepository->find($recurringExpenseId);
-            if (!$recurringExpense) {
-                $invalidRecurringExpenses[] = "ID {$recurringExpenseId}";
-                continue;
-            }
-
-            $existingExpense = null;
-            $allExpensesForThisRE = $this->expenseRepository->findBy(['recurringExpense' => $recurringExpense]);
-            foreach ($allExpensesForThisRE as $expenseItem) {
-                if ($expenseItem->dueDate()->format('Y-m') === $targetMonthDate->format('Y-m')) {
-                    $existingExpense = $expenseItem;
-                    break;
-                }
-            }
-
-            $include = filter_var($itemData['include'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            $amount = isset($itemData['amount']) && $itemData['amount'] !== '' ? (int)$itemData['amount'] : null;
-
-            /** @var ?\DateTime $formDueDate */
-            $formDueDate = $itemData['dueDate'] ?? null;
-            if (is_string($formDueDate)) {
-                try {
-                    $formDueDate = (new \DateTime($formDueDate))->setTime(12,0,0);
-                } catch (\Exception $e) {
-                    $invalidRecurringExpenses[] = "Data de vencimento inválida para '{$recurringExpense->description()}'";
-                    continue;
-                }
-            }
-
-
-            if ($include) {
-                if ($amount === null) {
-                    $missingAmounts[] = $recurringExpense->description();
-                    if ($existingExpense) {
-                        $this->entityManager->remove($existingExpense);
-                    }
-                    continue;
-                }
-
-                if ($formDueDate === null) {
-                    $formDueDate = $this->calculateExpenseDateForMonth($recurringExpense, $targetMonthDate);
-                }
-
-                $needsRecreation = false;
-                if ($existingExpense) {
-                    $existingDueDateFormatted = $existingExpense->dueDate()->format('Y-m-d H:i:s');
-                    $formDueDateFormatted = $formDueDate->format('Y-m-d H:i:s');
-
-                    if ($existingExpense->amount() !== $amount || $existingDueDateFormatted !== $formDueDateFormatted) {
-                        $this->entityManager->remove($existingExpense);
-                        $needsRecreation = true;
-                    }
-                } else {
-                    $needsRecreation = true;
-                }
-
-                if ($needsRecreation) {
-                    $newExpenseId = Uuid::v4()->toRfc4122();
-                    $expenseType = $recurringExpense->expenseType();
-
-                    if (!$expenseType) {
-                        $invalidRecurringExpenses[] = "Tipo de despesa não definido para '{$recurringExpense->description()}'";
-                        continue;
-                    }
-
-                    $accountForConstructor = null;
-                    if (method_exists($expenseType, 'account') && $expenseType->account() !== null) {
-                        $accountForConstructor = $expenseType->account();
-                    } elseif (method_exists($expenseType, 'defaultAccount') && $expenseType->defaultAccount() !== null) {
-                        $accountForConstructor = $expenseType->defaultAccount();
-                    } elseif (method_exists($recurringExpense, 'account') && $recurringExpense->account() !== null) {
-                        $accountForConstructor = $recurringExpense->account();
-                    }
-
-                    if ($accountForConstructor === null) {
-                        $expensesWithoutAccounts[] = $recurringExpense->description();
-                    }
-
-                    $newExpense = new Expense(
-                        $newExpenseId,
-                        $amount,
-                        $expenseType,
-                        $accountForConstructor,
-                        $formDueDate
-                    );
-                    $newExpense->setRecurringExpense($recurringExpense);
-                    $newExpense->addDescription($recurringExpense->description());
-
-                    $this->entityManager->persist($newExpense);
-
-                    $event = new ExpenseWasCreated(
-                        $newExpense->id(),
-                        $newExpense->amount(),
-                        $newExpense->description(),
-                        $newExpense->dueDate()->format('Y-m-d H:i:s'),
-                        $expenseType->id(),
-                        $accountForConstructor ? $accountForConstructor->id() : '',
-                        Uuid::v4()->toRfc4122(),
-                        (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM)
-                    );
-
-                    $this->commandBus->dispatch($event);
-                    $generatedCount++;
-                }
-            } else {
-                if ($existingExpense) {
-                    $this->entityManager->remove($existingExpense);
-                }
-            }
-        }
-
-        if (!empty($invalidRecurringExpenses)) {
-            $message = "Problemas encontrados: " . implode('; ', $invalidRecurringExpenses);
-            $this->addFlash('error', $message);
-        }
-        if (!empty($expensesWithoutAccounts)) {
-            $message = "As seguintes despesas foram criadas sem conta associada: " . implode(', ', $expensesWithoutAccounts) . ". Revise-as para adicionar uma conta.";
-            $this->addFlash('warning', $message);
-        }
-        if (!empty($missingAmounts)) {
-            $message = "As seguintes despesas foram ignoradas por não terem valor fornecido: " . implode(', ', $missingAmounts);
-            $this->addFlash('warning', $message);
-        }
-
-        if (empty($invalidRecurringExpenses)) {
-            if ($generatedCount === 1) {
-                $this->addFlash('success', "1 despesa foi gerada com sucesso para " . $this->formatMonthName($targetMonthDate));
-            } elseif ($generatedCount > 1) {
-                $this->addFlash('success', "{$generatedCount} despesas foram geradas com sucesso para " . $this->formatMonthName($targetMonthDate));
-            } elseif (empty($missingAmounts) && empty($expensesWithoutAccounts)) {
-                $this->addFlash('info', "Nenhuma despesa nova foi gerada para " . $this->formatMonthName($targetMonthDate));
-            }
-        }
-        $this->entityManager->flush();
-    }
-
-    private function calculateExpenseDateForMonth(RecurringExpense $re, \DateTimeInterface $targetMonthDate): \DateTime
-    {
-        $year = (int)$targetMonthDate->format('Y');
-        $month = (int)$targetMonthDate->format('n');
-        $day = $re->dueDay() ?? 1;
-
-        if (!checkdate($month, $day, $year)) {
-            $day = (int)((clone $targetMonthDate)->modify('last day of this month')->format('d'));
-        }
-        return (new \DateTime())->setDate($year, $month, $day)->setTime(12,0,0);
-    }
-
+    // Kept method as per instruction, used by __invoke
     private function formatMonthName(\DateTimeInterface $date): string
     {
         $formatter = new \IntlDateFormatter(

@@ -17,6 +17,8 @@ class ExpenseTypeFixtures extends Fixture
         'MR5EQ' => ['name' => 'MANUTENCAO_EQUIPAMENTOS', 'description' => 'Bombas d\'água, portões eletrônicos, interfones, sistema de CFTV (câmeras).', 'distributionMethod' => 'EQUAL', 'isRecurring' => false],
         'MR6SI' => ['name' => 'MANUTENCAO_SISTEMAS_INCENDIO', 'description' => 'Recarga/revisão de extintores, teste de mangueiras, manutenção de alarmes e detectores.', 'distributionMethod' => 'EQUAL', 'isRecurring' => false],
         'MR7CP' => ['name' => 'CONTROLE_PRAGAS', 'description' => 'Dedetizações periódicas ou emergenciais (baratas, ratos, cupins, etc.).', 'distributionMethod' => 'EQUAL', 'isRecurring' => false],
+        'MR8RO' => ['name' => 'MANUTENÇÃO PREVENTIVA PORTÃO', 'description' => 'Manutenção preventiva ou paliativa do portão da garagem).', 'distributionMethod' => 'EQUAL', 'isRecurring' => true],
+
 
         // Serviços Públicos / Contas de Consumo (SP)
         'SP1EL' => ['name' => 'CEMIG', 'description' => 'Conta de luz de corredores, elevador(es), bombas, portões, iluminação externa.', 'distributionMethod' => 'EQUAL', 'isRecurring' => true],

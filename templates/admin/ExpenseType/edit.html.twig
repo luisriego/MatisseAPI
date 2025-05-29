@@ -1,0 +1,52 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Editar Tipo de Despesa{% endblock %}
+
+{# Configure admin layout header elements #}
+{% block page_title %}Editar Tipo de Despesa{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{{ path('admin_expense_type_index') }}">Tipos de Despesa</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Editar Tipo de Despesa</li>
+{% endblock %}
+
+{% block admin_page_content %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Formulário de Edição</h5>
+        </div>
+        <div class="card-body">
+            {{ form_start(form) }}
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    {{ form_row(form.code) }}
+                </div>
+                <div class="col-md-8">
+                    {{ form_row(form.name) }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-12">
+                    {{ form_row(form.description) }}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    {{ form_row(form.distributionMethod) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.isRecurring) }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col d-flex">
+                    {{ form_widget(form.save) }}
+                </div>
+                <div class="col text-end">
+                    <a href="{{ path('admin_expense_type_index') }}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}
